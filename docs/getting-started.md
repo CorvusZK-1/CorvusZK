@@ -63,7 +63,7 @@ See [on-chain-submit.md](on-chain-submit.md) and [proof-server.md](proof-server.
 - Compact templates use **`persistentHash`**.
 - Those commitments are **not interchangeable**. `MidnightBackend` rewrites `Proof.claim.commitment` to the Compact commitment for circuit proofs.
 
-Issuer-linked real age/balance (a bank or ID issuer signing the commitment) is **future work**.
+`age_over` and `balance_above` still do not check an issuer. `npm run example:eligibility` runs a labeled mock issuer and a one-time escrow nullifier locally. It is not a regulated credential and not a Preprod deployment. The README security model states the remaining trust assumptions.
 
 ## Next docs
 

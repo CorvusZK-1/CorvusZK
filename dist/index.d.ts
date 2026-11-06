@@ -150,6 +150,10 @@ export declare class MidnightBackend implements ProofBackend {
 export declare function proveCondition(b: ProofBackend, secret: string, salt: string, commitment: string): Promise<Proof>;
 export declare function proveBalanceAbove(b: ProofBackend, balance: number, threshold: number, salt: string): Promise<Proof>;
 export declare function proveAgeOver(b: ProofBackend, birthYear: number, minAge: number, asOfYear: number, salt: string): Promise<Proof>;
+/** PREIMAGE-SHA-256 condition. The caller receives the fulfillment immediately.
+ *  This function does not bind that fulfillment to a Midnight proof.
+ *  The bound path is midnight/eligibility.mjs (see README "Security model").
+ */
 export declare function createCryptoCondition(): {
     condition: any;
     fulfillment: any;

@@ -1,0 +1,204 @@
+{
+  "compiler-version": "0.31.1",
+  "language-version": "0.23.0",
+  "runtime-version": "0.16.0",
+  "circuits": [
+    {
+      "name": "prove",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "reveal",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "holderSecret",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "expiry",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "nonceX",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "nonceY",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "sigS",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "releasePreimage",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ],
+  "contracts": [
+  ],
+  "ledger": [
+    {
+      "name": "issuerX",
+      "index": 0,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "issuerY",
+      "index": 1,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "credentialType",
+      "index": 2,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "asOf",
+      "index": 3,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "preimageCommit",
+      "index": 4,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "escrowOwner",
+      "index": 5,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "offerSequence",
+      "index": 6,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Uint",
+        "maxval": 4294967295
+      }
+    },
+    {
+      "name": "escrowDestination",
+      "index": 7,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "proven",
+      "index": 8,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Boolean"
+      }
+    },
+    {
+      "name": "nullifier",
+      "index": 9,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "preimageRevealed",
+      "index": 10,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Boolean"
+      }
+    },
+    {
+      "name": "revealedPreimage",
+      "index": 11,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ]
+}

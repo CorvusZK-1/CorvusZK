@@ -8,6 +8,7 @@ Honest inventory of this toolkit as of **5 Nov 2026** (v1.0.1 packaging refresh)
 |---|---|
 | TypeScript SDK (`src/`, builds to `dist/`) | Non-custodial. Never holds funds, keys, or fulfillments. |
 | Three Compact templates | `condition`, `balance_above`, `age_over` under `contracts/` |
+| Eligibility template | `contracts/eligibility.compact`: mock Schnorr issuer, one-time nullifier bound to XRPL owner, offer sequence, destination, and preimage commitment. Local circuit only. Not on Preprod. |
 | Compiled circuit artifacts | `midnight/managed/` (needed for `npm run simulate` and `MidnightBackend`) |
 | Live Midnight Preprod contracts (deployed 3 Nov 2026) | Public addresses in `midnight/deployments.preprod.json` and explorer links below |
 | **On-chain submit from the SDK** | `MidnightBackend.submitOnChain` → `midnight/sdk-bridge.mjs` `submitCallTx` (bounded wallet sync; no redeploy) |
@@ -33,6 +34,8 @@ Honest inventory of this toolkit as of **5 Nov 2026** (v1.0.1 packaging refresh)
 | Registered domain | **corvuszk.com** registered (Porkbun, paid through 5 Nov 2027). Trademark not filed. |
 | Wallet seeds, Blockfrost project IDs, or other secrets | Never ship in this package. Set `BLOCKFROST_MIDNIGHT_PREPROD` yourself. |
 | Custodial service or money movement | Deliberately out of scope. XRP stays in the payer's own XRPL escrow. |
+| Regulated KYC / XRPL Credential object | Not shipped. The eligibility example is a labeled mock. |
+| XRPL-enforced Midnight proof | Not shipped. XRPL checks the crypto-condition preimage only. |
 
 ## Two backends (know the difference)
 

@@ -326,6 +326,10 @@ export async function proveAgeOver(b, birthYear, minAge, asOfYear, salt) {
     return b.prove({ kind: 'ageOver', minAge, asOfYear, commitment: commit(birthYear, salt) }, asOfYear - birthYear >= minAge, witness);
 }
 // ---------- XRPL escrow (non-custodial) ----------
+/** PREIMAGE-SHA-256 condition. The caller receives the fulfillment immediately.
+ *  This function does not bind that fulfillment to a Midnight proof.
+ *  The bound path is midnight/eligibility.mjs (see README "Security model").
+ */
 export function createCryptoCondition() {
     const preimage = crypto.randomBytes(32);
     const f = new cc.PreimageSha256();

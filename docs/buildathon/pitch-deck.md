@@ -51,11 +51,11 @@ Banks later; Preprod product first.
 - Dual-ledger: private witness on Midnight; public XRPL escrow stay standard  
 - Selective disclosure: only the boolean claim reaches the finish path  
 - Non-custody: no seeds, no fulfillments stored by CorvusZK  
-- Honest limits: testnet only; no hosted relay; issuer-linked credentials are future work
+- Honest limits: testnet only; no hosted relay; eligibility is a labeled mock Schnorr check, not regulated KYC; XRPL does not verify the Midnight proof
 
 ## 9. Ask / next
 - Public GitHub with `midnightntwrk` label  
-- GitHub Pages + corvuszk.com DNS  
+- Public site https://corvuszk.com is live (checked 6 Nov 2026)  
 - Short demo video (script in `demo-script.md`)  
 - Optional: XRPL Commons Glow after OSS is live  
 
