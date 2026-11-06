@@ -8,7 +8,7 @@ This is a first Wave 3 submission (no prior Wave 1/2 CorvusZK entry).
 2. **XRPL escrow gate.** End-to-end testnet path: native escrow create → Midnight proof → `EscrowFinish` only after verify (EscrowFinish example `A289E64F…40AE`).  
 3. **SDK.** `MidnightBackend` prove/verify via `midnight/sdk-bridge.mjs`; local-circuits and preprod modes; CLI `midnight/submit-onchain.mjs`.  
 4. **Developer packaging.** Getting-started docs, offline example (`examples/escrow-offline.mjs`), SECURITY.md, Apache-2.0 LICENSE, WHAT-YOU-GET checklist, buyer zip without secrets.  
-5. **Product positioning.** Explicit developer / small-project focus (not banks first). Landing page tree + domain **corvuszk.com** registered for Pages/DNS.  
+5. **Product positioning.** Explicit developer / small-project focus (not banks first). Public site https://corvuszk.com returned HTTP 200 on 6 Nov 2026 (GitHub Pages). https://corvuszk-1.github.io/CorvusZK/ redirected there.  
 6. **Tests.** Full suite green (unit + live XRPL testnet escrow) after packaging.
 
 ## Honest gaps (still out of scope for this Wave)
@@ -16,7 +16,7 @@ This is a first Wave 3 submission (no prior Wave 1/2 CorvusZK entry).
 - No hosted proof relay  
 - Fresh new-commitment deploys still via `midnight/deploy.mjs`  
 - Issuer-linked real age/balance credentials are future work  
-- Public GitHub + GitHub Pages + DNS pointing were prepared as a public-safe tree and are the publish step at submit time
+- The public repository and https://corvuszk.com are up. That does not prove feature dates earlier than the public git history (publication commit `035c804`, 5 Nov 2026 PST). The eligibility contract added after that commit is local-only and is not in the 3 Nov Preprod deployment manifest.
 
 ## How privacy shapes the design
 Private witnesses stay in Midnight Compact circuits. XRPL only sees a standard escrow and a finish gated by verification. CorvusZK never custodies funds or stores seeds/fulfillments.

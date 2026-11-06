@@ -1,0 +1,140 @@
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+
+// Mock-issuer eligibility gate for one escrow.
+// The circuit verifies a Schnorr signature on Compact's embedded curve (the
+// curve exposed by ecMul / ecMulGenerator in toolchain 0.31.1). It does not
+// verify Ed25519, and it does not read an XRPL Credential ledger object.
+// Toolchain 0.31.1 has no scalar-field modulo, so signers must use 96-bit
+// scalars. That bound is a demo limit, not a production parameter.
+//
+// One contract instance is one XRPL escrow. Constructor fixes the owner,
+// offer sequence, destination, and PREIMAGE-SHA-256 preimage commitment.
+// prove() may succeed once. It records a nullifier bound to that escrow.
+// reveal() may succeed once, and only after prove(), and only for that preimage.
+// There is no cross-contract nullifier set: a second deployment starts unused.
+// XRPL still does not verify this proof. The party who sampled the preimage
+// can finish the escrow without calling reveal().
+
+export ledger issuerX: Field;
+export ledger issuerY: Field;
+export ledger credentialType: Bytes<32>;
+export ledger asOf: Uint<64>;
+export ledger preimageCommit: Bytes<32>;
+export ledger escrowOwner: Bytes<32>;
+export ledger offerSequence: Uint<32>;
+export ledger escrowDestination: Bytes<32>;
+export ledger proven: Boolean;
+export ledger nullifier: Bytes<32>;
+export ledger preimageRevealed: Boolean;
+export ledger revealedPreimage: Bytes<32>;
+
+witness holderSecret(): Bytes<32>;
+witness expiry(): Uint<64>;
+witness nonceX(): Field;
+witness nonceY(): Field;
+witness sigS(): Field;
+witness releasePreimage(): Bytes<32>;
+
+constructor(
+  ix: Field,
+  iy: Field,
+  ctype: Bytes<32>,
+  asOf_: Uint<64>,
+  pCommit: Bytes<32>,
+  owner: Bytes<32>,
+  seq: Uint<32>,
+  dest: Bytes<32>
+) {
+  issuerX = disclose(ix);
+  issuerY = disclose(iy);
+  credentialType = disclose(ctype);
+  asOf = disclose(asOf_);
+  preimageCommit = disclose(pCommit);
+  escrowOwner = disclose(owner);
+  offerSequence = disclose(seq);
+  escrowDestination = disclose(dest);
+  proven = false;
+  nullifier = pad(32, "");
+  preimageRevealed = false;
+  revealedPreimage = pad(32, "");
+}
+
+// First 12 bytes, little-endian. Result is < 2^96.
+circuit fold96(h: Bytes<32>): Field {
+  return (h[0] as Field)
+    + (h[1] as Field) * 256
+    + (h[2] as Field) * 65536
+    + (h[3] as Field) * 16777216
+    + (h[4] as Field) * 4294967296
+    + (h[5] as Field) * 1099511627776
+    + (h[6] as Field) * 281474976710656
+    + (h[7] as Field) * 72057594037927936
+    + (h[8] as Field) * 18446744073709551616
+    + (h[9] as Field) * 4722366482869645213696
+    + (h[10] as Field) * 1208925819614629174706176
+    + (h[11] as Field) * 309485009821345068724781056;
+}
+
+circuit subjectCommit(secret: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "corvuszk:subject:v1"), secret]);
+}
+
+circuit challenge(sub: Bytes<32>, exp: Uint<64>, R: JubjubPoint, P: JubjubPoint): Field {
+  const msg = persistentHash<Vector<8, Bytes<32>>>([
+    pad(32, "corvuszk:elig:v1"),
+    credentialType,
+    sub,
+    exp as Field as Bytes<32>,
+    upgradeFromTransient(jubjubPointX(R)),
+    upgradeFromTransient(jubjubPointY(R)),
+    upgradeFromTransient(jubjubPointX(P)),
+    upgradeFromTransient(jubjubPointY(P))
+  ]);
+  return fold96(msg);
+}
+
+circuit escrowNullifier(secret: Bytes<32>): Bytes<32> {
+  // Account ids are 32 bytes: 20-byte XRPL account id, then 12 zero bytes.
+  // Sequence is little-endian in the first bytes of a 32-byte field encoding.
+  return persistentHash<Vector<7, Bytes<32>>>([
+    pad(32, "corvuszk:escrow-null:v1"),
+    secret,
+    credentialType,
+    escrowOwner,
+    offerSequence as Field as Bytes<32>,
+    escrowDestination,
+    preimageCommit
+  ]);
+}
+
+export circuit prove(): [] {
+  assert(!proven, "already proven");
+  assert(escrowOwner != pad(32, ""), "escrow owner required");
+  assert(escrowDestination != pad(32, ""), "escrow destination required");
+  const secret = holderSecret();
+  const exp = expiry();
+  assert(exp >= asOf, "expired");
+  const sub = subjectCommit(secret);
+  const R = constructJubjubPoint(nonceX(), nonceY());
+  const P = constructJubjubPoint(issuerX, issuerY);
+  const e = challenge(sub, exp, R, P);
+  const s = sigS();
+  const left = ecMulGenerator(s);
+  const right = ecAdd(R, ecMul(P, e));
+  assert(jubjubPointX(left) == jubjubPointX(right), "bad signature");
+  assert(jubjubPointY(left) == jubjubPointY(right), "bad signature");
+  proven = true;
+  nullifier = disclose(escrowNullifier(secret));
+}
+
+// Writes the XRPL preimage to public state only after prove() has succeeded.
+// Anyone who already knows the preimage can ignore this and finish the escrow.
+export circuit reveal(): [] {
+  assert(proven, "eligibility not proven");
+  assert(!preimageRevealed, "preimage already revealed");
+  const p = releasePreimage();
+  assert(persistentHash<Vector<2, Bytes<32>>>([pad(32, "corvuszk:preimage:v1"), p]) == preimageCommit, "preimage mismatch");
+  revealedPreimage = disclose(p);
+  preimageRevealed = true;
+}

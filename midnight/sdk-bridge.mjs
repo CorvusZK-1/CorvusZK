@@ -183,7 +183,12 @@ export async function verifyOnChainLedger(o) {
   );
   if (!st) return { found: false, ok: false };
   const led = m.ledger(st.data);
-  const ok = o.template === 'condition' ? led.released === true : led.proven === true;
+  const ok =
+    o.template === 'condition'
+      ? led.released === true
+      : o.template === 'eligibility'
+        ? led.proven === true && led.preimageRevealed === true
+        : led.proven === true;
   return { found: true, ok, ledger: led };
 }
 
@@ -220,11 +225,57 @@ export function witnessesFor(template, witness) {
       salt: (c) => [c.privateState, salt],
     };
   }
+  if (template === 'eligibility') return eligibilityWitnesses(() => witness);
   throw new Error(`unknown template: ${template}`);
 }
 
-export function circuitFor(template) {
+function eligibilityWitnesses(getWitness) {
+  const freshZeros = () => new Uint8Array(32);
+  return {
+    holderSecret: (c) => {
+      const w = getWitness() ?? {};
+      return [c.privateState, w.holderSecret ? toBytes32(w.holderSecret) : freshZeros()];
+    },
+    expiry: (c) => {
+      const w = getWitness() ?? {};
+      return [c.privateState, w.expiry != null ? BigInt(w.expiry) : 0n];
+    },
+    nonceX: (c) => {
+      const sig = getWitness()?.signature ?? {};
+      return [c.privateState, sig.nonceX != null ? BigInt(sig.nonceX) : 0n];
+    },
+    nonceY: (c) => {
+      const sig = getWitness()?.signature ?? {};
+      return [c.privateState, sig.nonceY != null ? BigInt(sig.nonceY) : 0n];
+    },
+    sigS: (c) => {
+      const sig = getWitness()?.signature ?? {};
+      return [c.privateState, sig.s != null ? BigInt(sig.s) : 0n];
+    },
+    releasePreimage: (c) => {
+      const w = getWitness() ?? {};
+      return [c.privateState, w.releasePreimage ? toBytes32(w.releasePreimage) : freshZeros()];
+    },
+  };
+}
+
+export function circuitFor(template, witness) {
+  if (template === 'eligibility') return witness?.circuit === 'reveal' ? 'reveal' : 'prove';
   return template === 'condition' ? 'attest' : 'prove';
+}
+
+export function txReceipt(pub, extra = {}) {
+  const fees = pub?.fees;
+  return {
+    ...extra,
+    txId: String(pub?.txId ?? ''),
+    txHash: String(pub?.txHash ?? ''),
+    blockHeight: pub?.blockHeight,
+    fees: {
+      paidFees: fees?.paidFees != null ? String(fees.paidFees) : null,
+      estimatedFees: fees?.estimatedFees != null ? String(fees.estimatedFees) : null,
+    },
+  };
 }
 
 /**
@@ -248,7 +299,7 @@ export async function submitCallTx(o) {
 
   const deps = o.deps ?? {};
   const managedRoot = o.managedRoot ?? path.join(here, 'managed');
-  const circuit = circuitFor(o.template);
+  const circuit = o.circuit ?? circuitFor(o.template, o.witness);
 
   // Lazy-load heavy modules unless injected (keeps unit tests offline).
   const openSyncedWallet =
@@ -290,19 +341,171 @@ export async function submitCallTx(o) {
     }
     const r = await found.callTx[circuit]();
     const pub = r.public ?? r;
-    return {
+    return txReceipt(pub, {
       template: o.template,
       circuit,
       contractAddress: o.contractAddress,
-      txId: String(pub.txId ?? ''),
-      txHash: String(pub.txHash ?? ''),
-      blockHeight: pub.blockHeight,
-    };
+    });
   } finally {
     try {
       await wallet.stop();
     } catch {
       /* ignore */
     }
+  }
+}
+
+/** In-process contracts whose witness box can be updated for prove then reveal. */
+const eligibilitySessions = new Map();
+
+async function eligibilityDeps(o) {
+  const deps = o.deps ?? {};
+  return {
+    deps,
+    managedRoot: o.managedRoot ?? path.join(here, 'managed'),
+    openSyncedWallet: deps.openSyncedWallet ?? (await import('./providers.mjs')).openSyncedWallet,
+    makeProvidersFactory: deps.makeProvidersFactory ?? (await import('./providers.mjs')).makeProvidersFactory,
+    assertProofServer: deps.assertProofServer ?? (await import('./providers.mjs')).assertProofServer,
+    deployContract: deps.deployContract ?? (await import('@midnight-ntwrk/midnight-js/contracts')).deployContract,
+    findDeployedContract:
+      deps.findDeployedContract ?? (await import('@midnight-ntwrk/midnight-js/contracts')).findDeployedContract,
+    CompiledContract: deps.CompiledContract ?? (await import('@midnight-ntwrk/compact-js')).CompiledContract,
+    loadContractFn: deps.loadContract ?? loadContract,
+  };
+}
+
+/**
+ * Deploy contracts/eligibility.compact. Does not log the preimage, issuer secret, or Blockfrost id.
+ * Keeps the wallet open so a later callEligibility in this process can prove and reveal
+ * without a second sync. Call closeEligibilitySession when finished.
+ */
+export async function deployEligibility(o) {
+  if (!o?.preimageCommit && !o?.publicTerms?.preimageCommit) {
+    throw new Error('deployEligibility: preimageCommit is required (not the preimage)');
+  }
+  if (o.preimage || o.fulfillment || o.holder) {
+    throw new Error('deployEligibility: pass the commitment and escrow binding, not the preimage or fulfillment');
+  }
+  const { eligibilityDeployArgs } = await import('./eligibility.mjs');
+  const d = await eligibilityDeps(o);
+  await d.assertProofServer();
+  const { ctx, wallet, state } = await d.openSyncedWallet({
+    walletName: o.walletName ?? 'deployer',
+    syncTimeoutMs: o.syncTimeoutMs,
+  });
+  const box = { witness: o.witness ?? {} };
+  try {
+    const m = await d.loadContractFn('eligibility', d.managedRoot);
+    const args = eligibilityDeployArgs(o);
+    const cc = d.CompiledContract.make('eligibility', m.Contract).pipe(
+      d.CompiledContract.withWitnesses(eligibilityWitnesses(() => box.witness)),
+      d.CompiledContract.withCompiledFileAssets(path.join(d.managedRoot, 'eligibility'))
+    );
+    const providers = d.makeProvidersFactory(ctx, wallet, state)('eligibility');
+    const deployed = await d.deployContract(providers, {
+      compiledContract: cc,
+      privateStateId: 'eligibility',
+      initialPrivateState: {},
+      args,
+    });
+    const pub = deployed.deployTxData?.public ?? deployed.public ?? deployed;
+    const contractAddress = String(pub.contractAddress ?? '');
+    if (!contractAddress) throw new Error('deployEligibility: deploy receipt had no contractAddress');
+    eligibilitySessions.set(contractAddress, { box, deployed, wallet });
+    return txReceipt(pub, { template: 'eligibility', circuit: 'deploy', contractAddress });
+  } catch (err) {
+    try {
+      await wallet.stop();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  }
+}
+
+/**
+ * Call prove or reveal on an eligibility contract.
+ * Uses the in-process session from deployEligibility when present so witnesses
+ * can change between the two calls. Otherwise opens a wallet and findDeployedContract.
+ */
+export async function callEligibility(o) {
+  const circuit = o?.circuit === 'reveal' ? 'reveal' : o?.circuit === 'prove' ? 'prove' : null;
+  if (!circuit) throw new Error('callEligibility: circuit must be "prove" or "reveal"');
+  if (!o?.contractAddress) throw new Error('callEligibility: contractAddress is required');
+  if (!o?.witness) throw new Error('callEligibility: witness is required (caller-supplied; not stored)');
+  const session = eligibilitySessions.get(o.contractAddress);
+  if (session) {
+    session.box.witness = o.witness;
+    if (typeof session.deployed.callTx?.[circuit] !== 'function') {
+      throw new Error(`callEligibility: circuit "${circuit}" is not on the in-process contract`);
+    }
+    const r = await session.deployed.callTx[circuit]();
+    const pub = r.public ?? r;
+    return txReceipt(pub, { template: 'eligibility', circuit, contractAddress: o.contractAddress });
+  }
+  return submitCallTx({
+    ...o,
+    template: 'eligibility',
+    circuit,
+    witness: { ...o.witness, circuit },
+  });
+}
+
+export async function closeEligibilitySession(contractAddress) {
+  const session = eligibilitySessions.get(contractAddress);
+  if (!session) return;
+  eligibilitySessions.delete(contractAddress);
+  try {
+    await session.wallet.stop();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Read eligibility ledger from the indexer. Polls until the preimage is revealed or waitMs elapses.
+ * Returns the raw ledger for fulfillmentFromRevealedLedger. Does not print the preimage.
+ */
+export async function readEligibilityState(o) {
+  if (!o?.contractAddress) throw new Error('readEligibilityState: contractAddress is required');
+  const deps = o.deps ?? {};
+  const managedRoot = o.managedRoot ?? path.join(here, 'managed');
+  const waitMs = Number(o.waitMs ?? 0);
+  const { publicLedger } = await import('./eligibility.mjs');
+  const load = deps.loadContract ?? loadContract;
+  const m = await load('eligibility', managedRoot);
+  const query =
+    deps.queryContractState ??
+    (async (address) => {
+      const { setNetworkId } = await import('@midnight-ntwrk/midnight-js/network-id');
+      const { indexerPublicDataProvider } = await import(
+        '@midnight-ntwrk/midnight-js-indexer-public-data-provider'
+      );
+      setNetworkId('preprod');
+      if (!o.indexerHttpUrl || !o.indexerWsUrl) {
+        throw new Error('readEligibilityState: indexerHttpUrl and indexerWsUrl are required');
+      }
+      return indexerPublicDataProvider(o.indexerHttpUrl, o.indexerWsUrl).queryContractState(address);
+    });
+  const deadline = Date.now() + waitMs;
+  let last = null;
+  for (;;) {
+    const st = await query(o.contractAddress);
+    if (st) {
+      const rawLedger = m.ledger(st.data ?? st);
+      last = {
+        found: true,
+        proven: rawLedger.proven === true,
+        preimageRevealed: rawLedger.preimageRevealed === true,
+        revealedPreimage: rawLedger.preimageRevealed ? new Uint8Array(rawLedger.revealedPreimage) : null,
+        ledger: publicLedger(rawLedger),
+        rawLedger,
+      };
+      if (last.preimageRevealed || waitMs === 0) return last;
+    } else {
+      last = { found: false, proven: false, preimageRevealed: false, revealedPreimage: null, ledger: null, rawLedger: null };
+    }
+    if (Date.now() >= deadline) return last;
+    await new Promise((r) => setTimeout(r, Math.min(4000, deadline - Date.now())));
   }
 }

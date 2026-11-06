@@ -12,7 +12,9 @@
     "demo": "node demo/server.mjs",
     "demo:offline": "node demo/offline.mjs",
     "simulate": "cd midnight && node simulate.mjs",
-    "example:offline": "node examples/escrow-offline.mjs"
+    "example:offline": "node examples/escrow-offline.mjs",
+    "example:eligibility": "node examples/eligibility-release.mjs",
+    "live:eligibility": "npm run build && node midnight/live-eligibility.mjs"
   },
   "keywords": [
     "xrpl",

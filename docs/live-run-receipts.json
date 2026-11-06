@@ -1,0 +1,63 @@
+{
+  "preimageMode": "destination",
+  "trust": "The destination (policy party) sampled the preimage. They can submit EscrowFinish before any Midnight proof. The payer receives only the condition and the preimage commitment, so the payer cannot finish early.",
+  "mockIssuer": "MOCK ISSUER \u2014 demonstration only. Not a regulated KYC or accreditation provider, not an XRPL CredentialCreate, and not checked by the XRPL ledger.",
+  "xrplCreate": {
+    "hash": "ED8DC76659E0933858F288F4EF7691C8AB026E36CFEF797DAE232E2FDC98B0E3",
+    "feeDrops": "12",
+    "feeXrp": 1.2e-05,
+    "explorer": "https://testnet.xrpl.org/transactions/ED8DC76659E0933858F288F4EF7691C8AB026E36CFEF797DAE232E2FDC98B0E3"
+  },
+  "midnightDeploy": {
+    "circuit": "deploy",
+    "txId": "00de87f41f5d64839172e385e0c699cd987cf0830ebc61d8a5bfef31395ace0f29",
+    "txHash": "be8e5f99f7c1b8c13467d7b533e351c1dc4f898198328cef5181213f528dc779",
+    "blockHeight": 3311042,
+    "fees": {
+      "paidFees": "1",
+      "estimatedFees": "1"
+    },
+    "contractAddress": "fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee",
+    "txExplorer": "https://preprod.midnightexplorer.com/transactions/be8e5f99f7c1b8c13467d7b533e351c1dc4f898198328cef5181213f528dc779",
+    "contractExplorer": "https://preprod.midnightexplorer.com/contracts/fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee"
+  },
+  "midnightProve": {
+    "circuit": "prove",
+    "txId": "005836fa8dbba6d533695a0f13fa386afcd916ea5ff83730559ee1135345188f68",
+    "txHash": "f1d1935fb1960dc4d00ce773024056e495430cc478934be9fb38421693f9861f",
+    "blockHeight": 3311048,
+    "fees": {
+      "paidFees": "1",
+      "estimatedFees": "1"
+    },
+    "contractAddress": "fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee",
+    "txExplorer": "https://preprod.midnightexplorer.com/transactions/f1d1935fb1960dc4d00ce773024056e495430cc478934be9fb38421693f9861f",
+    "contractExplorer": "https://preprod.midnightexplorer.com/contracts/fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee"
+  },
+  "midnightReveal": {
+    "circuit": "reveal",
+    "txId": "006fc215227a761295bb5725ffaa1feaa2ede7ad541634b7a4f7f892b7c73dd59d",
+    "txHash": "ec4410ad604c60e8d8e7f1a9b13ed0fe1b423970cf297870cd8e602c071f62ba",
+    "blockHeight": 3311052,
+    "fees": {
+      "paidFees": "1",
+      "estimatedFees": "1"
+    },
+    "contractAddress": "fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee",
+    "txExplorer": "https://preprod.midnightexplorer.com/transactions/ec4410ad604c60e8d8e7f1a9b13ed0fe1b423970cf297870cd8e602c071f62ba",
+    "contractExplorer": "https://preprod.midnightexplorer.com/contracts/fd69a89c500708de630c22a4c4fd837fefdd870c2294eef0f1d21a182797feee"
+  },
+  "indexer": {
+    "found": true,
+    "proven": true,
+    "preimageRevealed": true,
+    "revealedPreimageSha256": "a1d60f3492e885e1b5b4475c7262c1911d3acf4e525c0d0a277b931411ed7779"
+  },
+  "xrplFinish": {
+    "hash": "22D2F438E121F544B191DD94387ECF3AEC817669133A2B47E9A0D8B47DDD65FD",
+    "feeDrops": "423",
+    "feeXrp": 0.000423,
+    "explorer": "https://testnet.xrpl.org/transactions/22D2F438E121F544B191DD94387ECF3AEC817669133A2B47E9A0D8B47DDD65FD",
+    "result": "tesSUCCESS"
+  }
+}

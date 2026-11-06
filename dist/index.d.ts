@@ -47,6 +47,10 @@ export type OnChainSubmitResult = {
     txId: string;
     txHash: string;
     blockHeight?: number;
+    fees?: {
+        paidFees: string | null;
+        estimatedFees: string | null;
+    };
 };
 export type MidnightBridge = {
     proveLocal: (o: {
@@ -81,13 +85,25 @@ export type MidnightBridge = {
     }>;
     /** Submit attest/prove callTx against an already-deployed Preprod contract. */
     submitCallTx?: (o: {
-        template: 'condition' | 'age_over' | 'balance_above';
+        template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+        circuit?: 'attest' | 'prove' | 'reveal';
         contractAddress: string;
         witness: Record<string, unknown>;
         managedRoot?: string;
         walletName?: string;
         syncTimeoutMs?: number;
     }) => Promise<OnChainSubmitResult>;
+    deployEligibility?: (o: Record<string, unknown>) => Promise<OnChainSubmitResult>;
+    callEligibility?: (o: Record<string, unknown>) => Promise<OnChainSubmitResult>;
+    readEligibilityState?: (o: Record<string, unknown>) => Promise<{
+        found: boolean;
+        proven: boolean;
+        preimageRevealed: boolean;
+        revealedPreimage: Uint8Array | null;
+        ledger: Record<string, unknown> | null;
+        rawLedger: Record<string, unknown> | null;
+    }>;
+    closeEligibilitySession?: (contractAddress: string) => Promise<void>;
     defaultManagedRoot?: string;
     defaultDeploymentsPath?: string;
 };
@@ -146,10 +162,74 @@ export declare class MidnightBackend implements ProofBackend {
     }): Promise<OnChainSubmitResult & {
         proof: Proof;
     }>;
+    /**
+     * Deploy a fresh eligibility contract on Midnight Preprod.
+     * Pass the preimage commitment and escrow binding, not the preimage.
+     * The in-process wallet stays open for callEligibility until closeEligibilitySession.
+     */
+    deployEligibility(o: {
+        issuer: {
+            publicKey: {
+                x: bigint;
+                y: bigint;
+            };
+        };
+        credentialType: string;
+        asOf: bigint | number | string;
+        preimageCommit: Uint8Array;
+        escrow: {
+            owner: string | Uint8Array;
+            offerSequence: number | bigint;
+            destination: string | Uint8Array;
+        };
+        witness?: Record<string, unknown>;
+        walletName?: string;
+        syncTimeoutMs?: number;
+    }): Promise<OnChainSubmitResult>;
+    /** Post eligibility prove() or reveal() on Preprod. Witnesses are caller-supplied and not stored. */
+    callEligibility(o: {
+        circuit: 'prove' | 'reveal';
+        contractAddress: string;
+        witness: Record<string, unknown>;
+        walletName?: string;
+        syncTimeoutMs?: number;
+    }): Promise<OnChainSubmitResult>;
+    /**
+     * Read the eligibility ledger from the Preprod indexer.
+     * `revealedPreimage` is set only after reveal() is in the indexed state.
+     */
+    readEligibilityState(o: {
+        contractAddress: string;
+        waitMs?: number;
+    }): Promise<{
+        found: boolean;
+        proven: boolean;
+        preimageRevealed: boolean;
+        revealedPreimage: Uint8Array | null;
+        ledger: Record<string, unknown> | null;
+        rawLedger: Record<string, unknown> | null;
+    }>;
+    closeEligibilitySession(contractAddress: string): Promise<void>;
 }
 export declare function proveCondition(b: ProofBackend, secret: string, salt: string, commitment: string): Promise<Proof>;
 export declare function proveBalanceAbove(b: ProofBackend, balance: number, threshold: number, salt: string): Promise<Proof>;
 export declare function proveAgeOver(b: ProofBackend, birthYear: number, minAge: number, asOfYear: number, salt: string): Promise<Proof>;
+/** Fee string from an xrpl.js submitAndWait result, in drops. Null when the receipt omits it. */
+export declare function feeDropsFromXrplResult(result: unknown): string | null;
+/** paidFees / estimatedFees from a Midnight finalization receipt. Null fields mean the receipt omitted them. */
+export declare function feesFromMidnightReceipt(pub: {
+    fees?: {
+        paidFees?: unknown;
+        estimatedFees?: unknown;
+    };
+} | null | undefined): {
+    paidFees: string | null;
+    estimatedFees: string | null;
+};
+/** PREIMAGE-SHA-256 condition. The caller receives the fulfillment immediately.
+ *  This function does not bind that fulfillment to a Midnight proof.
+ *  The bound path is midnight/eligibility.mjs (see README "Security model").
+ */
 export declare function createCryptoCondition(): {
     condition: any;
     fulfillment: any;
@@ -164,6 +244,7 @@ export declare function createEscrow(client: xrpl.Client, payer: xrpl.Wallet, o:
     result: string;
     owner: string;
     offerSequence: number;
+    feeDrops: string | null;
 }>;
 /** Verifies the proof first; only then submits EscrowFinish. Funds can only go to the escrow's fixed Destination. */
 export declare function verifyAndReleaseEscrow(client: xrpl.Client, submitter: xrpl.Wallet, o: {
@@ -177,10 +258,12 @@ export declare function verifyAndReleaseEscrow(client: xrpl.Client, submitter: x
     released: false;
     reason: string;
     hash?: undefined;
+    feeDrops?: undefined;
 } | {
     released: boolean;
     reason: string;
     hash: string;
+    feeDrops: string | null;
 }>;
 export declare const XRPL_TESTNET_WSS = "wss://testnet.xrpl-labs.com";
 export declare const explorerTx: (h: string) => string;
