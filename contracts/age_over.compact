@@ -1,0 +1,16 @@
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+// Prove age >= minAge without revealing birth year.
+export ledger minAge: Uint<16>;
+export ledger asOfYear: Uint<16>;
+export ledger birthCommit: Bytes<32>;
+export ledger proven: Boolean;
+witness birthYear(): Uint<16>;
+witness salt(): Bytes<32>;
+constructor(m: Uint<16>, y: Uint<16>, c: Bytes<32>) { minAge = disclose(m); asOfYear = disclose(y); birthCommit = disclose(c); proven = false; }
+export circuit prove(): [] {
+  const by = birthYear();
+  assert(persistentHash<Vector<2, Bytes<32>>>([salt(), by as Field as Bytes<32>]) == birthCommit, "commitment mismatch");
+  assert(by + minAge <= asOfYear, "under age");
+  proven = true;
+}

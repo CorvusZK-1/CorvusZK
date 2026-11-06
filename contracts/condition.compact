@@ -1,0 +1,21 @@
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+// Private delivery attestation gate for an XRPL escrow.
+// attesterCommit = persistentHash(attesterSecret); escrowId binds to XRPL Owner+OfferSequence.
+export ledger attesterCommit: Bytes<32>;
+export ledger escrowId: Bytes<32>;
+export ledger released: Boolean;
+witness attesterSecret(): Bytes<32>;
+witness deliveryOk(): Boolean;
+constructor(commit: Bytes<32>, id: Bytes<32>) {
+  attesterCommit = disclose(commit);
+  escrowId = disclose(id);
+  released = false;
+}
+export circuit attest(): [] {
+  assert(!released, "already released");
+  const s = attesterSecret();
+  assert(persistentHash<Bytes<32>>(s) == attesterCommit, "not the attester");
+  assert(deliveryOk(), "condition not met");
+  released = true;
+}

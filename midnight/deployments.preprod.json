@@ -1,0 +1,66 @@
+{
+ "deployerStatus": {
+  "nightBalance": "5000000000",
+  "nightUtxos": 1,
+  "registeredUtxos": 1,
+  "dustBalanceSpeck": "3967250629999999999",
+  "dustCoins": 1,
+  "dustPending": 0,
+  "at": "2026-11-04T01:01:08.760Z"
+ },
+ "dustRegistration": {
+  "txId": "000b31f54fc5c984b162263246c7b4fc29ce411890226d416adbabdbfeb49608c4",
+  "at": "2026-11-04T00:57:32.147Z"
+ },
+ "dustRate": {
+  "dustSpeckAt": "3969730729999999999",
+  "speckPerMinute": "2480100000000000",
+  "at": "2026-11-04T01:02:08.773Z"
+ },
+ "deployments": {
+  "condition": {
+   "contractAddress": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
+   "txId": "00d9a08184d9eb54d72946a3b65f3a8bbad9aee69ce5d115fe569cd52e4e4ee437",
+   "txHash": "8409eae18c2221a56c7ad8da02e3d04581eceb8e17b2c58ffbde91df143d8d3d",
+   "blockHeight": 3269837,
+   "at": "2026-11-04T01:02:27.038Z",
+   "call": {
+    "circuit": "attest",
+    "txId": "00ac0c92ce17d72b2930729338a832355ccaa8a17eb6ed9db5012597a097ad9f0a",
+    "txHash": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
+    "blockHeight": 3269841
+   }
+  },
+  "age_over": {
+   "contractAddress": "3458e15536314cd6ed68d20aecec14c66f3d786ad09a871cf057949170ec2367",
+   "txId": "004db6df8569f721f6acd26ae7abfebf6ecd66b5b9a3edd6d4a4f6d2e36ccc683e",
+   "txHash": "2c698d6556560b99bce639aefb674400fa56b8eb3db23f286c8000bf912dc3b8",
+   "blockHeight": 3269846,
+   "at": "2026-11-04T01:03:29.012Z",
+   "call": {
+    "circuit": "prove",
+    "txId": "0046482f277d7eea3a3c0688a7695f3c2603358284303d18a1e61508cb87704f28",
+    "txHash": "744ecf07dc7c52e42f23753f4c3a5a0adca9213beceb8a8693755bad4b165952",
+    "blockHeight": 3290220,
+    "via": "MidnightBackend/submitCallTx",
+    "at": "2026-11-05T11:00:51Z"
+   }
+  },
+  "balance_above": {
+   "contractAddress": "8606a6370f7eabd1b3ecda9303c5ceadc42bb55aff7e009d1a3b23c640fd6c0c",
+   "txId": "005b07acd195480c218ff13e9733e9ce065928977e3a883c2dfdde2dad7abf3058",
+   "txHash": "24d2aadbf3ab660f1e8bbb4448b4f37c8ca9fe8fea8b3da202944766b0db6232",
+   "blockHeight": 3269851,
+   "at": "2026-11-04T01:03:51.915Z"
+  }
+ },
+ "e2e": {
+  "midnightContract": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
+  "midnightAttestTx": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
+  "midnightReleasedFlag": "true",
+  "xrplCreate": "25112E6FCDEB813FC26C56728851368BF19E01CCD37BC09CED6991A0962960EB",
+  "xrplFinish": "A289E64FA9FCB6F6CBD70AD6F86F2D3556B0444726A3425087423DF3315D40AE",
+  "xrplFinishResult": "tesSUCCESS",
+  "at": "2026-11-04T01:04:31.143Z"
+ }
+}

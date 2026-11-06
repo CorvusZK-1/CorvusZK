@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../../../",
+  "sources": ["contracts/age_over.compact", "compiler/standard-library.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EASA;;;;;;;;;;;;;;;;MACA,AAAA,KAKC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;;GAN+I;EAAhJ;;;;;UAAY,GAAW;UAAE,GAAW;UAAE,GAAY;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IANlD;;;;;;;;;yEAA+B;IAC/B;;;;;;;;;yEAAiC;IACjC;;;;;;;;;yEAAqC;IACrC;;;;;;;;;yEAA8B;IAGwB;;;;;;;2HAAkB,GAAC;;yEAAb;IAAgB;;;;;;;2HAAoB,GAAC;;yEAAb;IAAgB;;;;;;;2HAAuB,GAAC;;yEAAb;IAAgB;;;;;;;;;yEAAM;;;;;;;GAAW;ECThJ,AAAA,kBAAA;oEAAA;;;EDOA,AAAA,YAA8B;;0DAA9B,SAA8B;;;;;;;;;;;;;;GAAA;EAC9B,AAAA,OAA0B;;0DAA1B,IAA0B;;;;;;;;;;;;;;GAAA;EAE1B,AAAA,QAKC;UAJO,IAAgB;;;;uGAC+B,IAAE;;kEAA4B;;;;;;;;;;;uIAAW;;QACvF,GAAuB;mCAAvB,IAAE;;2DAAG;;;;;;;;;;;gIAAM;6BAAX,GAAuB;;qDAAR;;;;;;;;;;;0HAAQ;;IAC9B;;;;;;;;;yEAAM;;GACP;;;;;;;;;;;;;;;;;;;;IAZD;qCAAA;;;;;;;;;;;0GAA+B;KAAA;IAC/B;qCAAA;;;;;;;;;;;0GAAiC;KAAA;IACjC;qCAAA;;;;;;;;;;;0GAAqC;KAAA;IACrC;qCAAA;;;;;;;;;;;0GAA8B;KAAA;;;;;;;;;;;;"
+}
