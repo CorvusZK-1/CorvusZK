@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CorvusZK — Proof-gated XRPL escrow for developers</title>
+  <meta name="description" content="Non-custodial TypeScript SDK and Compact templates for privacy proofs that gate native XRPL escrows on Midnight + XRP Ledger. Developer toolkit. Testnet first." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1220'/%3E%3Cpath d='M18 40c6-14 22-22 28-10-8 2-14 8-18 18-4-4-8-6-10-8z' fill='%23c4a574'/%3E%3Ccircle cx='40' cy='22' r='3' fill='%23e8eef8'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap brand-row">
+      <a class="brand" href="/">
+        <span class="mark" aria-hidden="true"></span>
+        <span>CorvusZK</span>
+      </a>
+      <nav>
+        <a href="#what">What</a>
+        <a href="#who">Who</a>
+        <a href="#get">What you get</a>
+        <a href="#start">Start</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <p class="eyebrow">Midnight + XRP Ledger · Developer toolkit</p>
+      <h1>Prove a private fact.<br />Then release the escrow.</h1>
+      <p class="lede">
+        CorvusZK is a non-custodial TypeScript SDK and Compact templates for
+        <strong>proof-gated XRPL escrows</strong> — age over N, balance above X,
+        or “condition met” — without holding anyone’s funds or keys.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="#start">Try offline in 5 minutes</a>
+        <a class="btn ghost" href="#get">See what’s included</a>
+      </div>
+      <p class="fine">Testnet / Midnight Preprod in this release. Not a bank. Not custodial. Not audited for mainnet.</p>
+    </section>
+
+    <section id="what" class="wrap panel">
+      <h2>What it does</h2>
+      <ol class="steps">
+        <li><strong>Lock</strong> — the payer’s own wallet creates a normal XRPL crypto-condition escrow. XRP sits on-ledger, not with CorvusZK.</li>
+        <li><strong>Prove</strong> — a Compact circuit on Midnight checks a private claim without publishing the private inputs.</li>
+        <li><strong>Release</strong> — your app finishes the escrow only after the proof verifies.</li>
+      </ol>
+      <p>
+        Three templates ship today: <code>condition</code>, <code>age_over</code>, and <code>balance_above</code>.
+        Simulation mode teaches the API offline; Midnight mode runs the real compiled circuits.
+      </p>
+    </section>
+
+    <section id="who" class="wrap panel alt">
+      <h2>Who it’s for</h2>
+      <p>
+        Indie and small-team TypeScript builders on XRPL (and Midnight) who need a
+        <em>private yes/no</em> before releasing escrowed value — marketplace releases,
+        age-gated digital goods, proof-of-funds style checks for a deal — without building
+        a custody stack or selling to banks first.
+      </p>
+      <ul class="bullets">
+        <li>You already speak TypeScript / Node.</li>
+        <li>You want escrow that stays native XRPL.</li>
+        <li>You’re fine starting on testnet while the privacy stack matures.</li>
+      </ul>
+      <p class="fine">If you need issuer-linked KYC age/balance today, say so up front — that link is future work, honestly listed in the docs.</p>
+    </section>
+
+    <section id="get" class="wrap panel">
+      <h2>What you get</h2>
+      <div class="grid two">
+        <div>
+          <h3>Included</h3>
+          <ul class="bullets">
+            <li>TypeScript SDK (<code>prove*</code>, escrow helpers, two backends)</li>
+            <li>Three Compact templates + managed circuit artifacts</li>
+            <li>Live Preprod contract addresses + on-chain <code>submitOnChain</code></li>
+            <li>Offline demo, optional XRPL testnet demo, docs</li>
+            <li>Apache-2.0 license</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Not included (yet)</h3>
+          <ul class="bullets">
+            <li>Midnight mainnet support</li>
+            <li>Hosted proof relay / SaaS monitoring</li>
+            <li>Custodial wallets or fund movement</li>
+            <li>Issuer-signed real age/balance credentials</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="start" class="wrap panel alt">
+      <h2>Start without spending</h2>
+      <pre class="code"><code>npm install &amp;&amp; npm run build
+npm run demo:offline
+npm run example:offline</code></pre>
+      <p>
+        Source and buyer package:
+        <a href="https://github.com/CorvusZK-1/CorvusZK">github.com/CorvusZK-1/CorvusZK</a>.
+      </p>
+      <p class="fine">Requires Node 20+. Blockfrost Preprod tokens stay in your env — never commit them.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>CorvusZK · Raven-minded privacy tooling · Apache-2.0</p>
+      <p class="fine">Not affiliated with Ripple, the XRPL Foundation, or the Midnight Foundation. Domain: corvuszk.com</p>
+    </div>
+  </footer>
+</body>
+</html>

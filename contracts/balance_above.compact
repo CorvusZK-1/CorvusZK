@@ -1,0 +1,15 @@
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+// Prove a private balance exceeds a public threshold, bound to a public commitment.
+export ledger threshold: Uint<64>;
+export ledger balanceCommit: Bytes<32>;
+export ledger proven: Boolean;
+witness balance(): Uint<64>;
+witness salt(): Bytes<32>;
+constructor(t: Uint<64>, c: Bytes<32>) { threshold = disclose(t); balanceCommit = disclose(c); proven = false; }
+export circuit prove(): [] {
+  const b = balance();
+  assert(persistentHash<Vector<2, Bytes<32>>>([salt(), b as Field as Bytes<32>]) == balanceCommit, "commitment mismatch");
+  assert(b > threshold, "balance not above threshold");
+  proven = true;
+}

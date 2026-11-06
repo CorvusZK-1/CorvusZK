@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+midnight/node_modules/
+
+# Secrets and local wallet state — never ship these
+.keys*
+.keys.testnet.json
+.env
+.env.*
+midnight/.wallets*
+midnight/.wallet-state*
+midnight/.contract-secrets*
+midnight/.xrpl-e2e-keys*
+midnight/.keys*
+*.seed
+*.mnemonic
+
+# Local Midnight sync / proof-server scratch
+midnight/midnight-level-db/
+midnight/logs/
+midnight/*.log
+npm-debug.log*
+*.log
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local backups (keep on disk; do not publish)
+*.bak
+*.bak-*

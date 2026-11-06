@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CorvusZK demo</title>
+<style>body{font-family:system-ui;max-width:720px;margin:40px auto;padding:0 16px}li{margin:8px 0}code{word-break:break-all}</style></head><body>
+<h1>CorvusZK: proof-gated XRPL escrow (testnet)</h1>
+<p>A buyer locks testnet XRP in a native XRPL escrow. It is released to the seller only after a proof that the buyer is 18+ verifies. <b>Proof backend: local simulation (signed attestation, not zero-knowledge).</b> No real funds; keys are throwaway and never shown.</p>
+<label>Buyer age (private input): <input id="age" type="number" value="30"></label> <button id="go">Run on XRPL testnet</button>
+<ol id="out"></ol>
+<script>
+go.onclick=async()=>{out.innerHTML='<li>Running (about 20 seconds)…</li>';
+const r=await (await fetch('/api/run?age='+age.value)).json();
+out.innerHTML=r.map(([t,d])=>`<li><b>${t}</b><br>${d.startsWith('https')?`<a href="${d}" target=_blank>${d}</a>`:`<code>${d}</code>`}</li>`).join('');};
+</script></body></html>

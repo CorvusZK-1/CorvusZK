@@ -1,0 +1,72 @@
+{
+  "name": "corvuszk",
+  "version": "1.0.1",
+  "description": "Non-custodial TypeScript SDK + Compact templates for proof-gated XRPL escrows on Midnight",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test test/*.test.mjs",
+    "demo": "node demo/server.mjs",
+    "demo:offline": "node demo/offline.mjs",
+    "simulate": "cd midnight && node simulate.mjs",
+    "example:offline": "node examples/escrow-offline.mjs"
+  },
+  "keywords": [
+    "xrpl",
+    "xrp",
+    "midnight",
+    "zero-knowledge",
+    "zk",
+    "escrow",
+    "compact",
+    "privacy",
+    "typescript",
+    "sdk",
+    "corvuszk"
+  ],
+  "author": "Cory Raven",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "five-bells-condition": "^5.0.1",
+    "xrpl": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "types": "dist/index.d.ts",
+  "homepage": "https://corvuszk.com",
+  "bugs": {
+    "url": "https://github.com/CorvusZK-1/CorvusZK/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CorvusZK-1/CorvusZK.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "contracts/",
+    "docs/",
+    "examples/",
+    "demo/",
+    "midnight/*.mjs",
+    "midnight/*.sh",
+    "midnight/package.json",
+    "midnight/deployments.preprod.json",
+    "midnight/managed/",
+    "WHAT-YOU-GET.md",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "package.json",
+    "tsconfig.json"
+  ]
+}
