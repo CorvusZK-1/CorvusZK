@@ -233,24 +233,85 @@ export function xrplConditionFromPreimage(preimage) {
   };
 }
 
+const TRUST = {
+  payer:
+    'The payer sampled the preimage. They can submit EscrowFinish before any Midnight proof. The destination cannot finish until the preimage is revealed on Midnight or the payer shares it.',
+  destination:
+    'The destination (policy party) sampled the preimage. They can submit EscrowFinish before any Midnight proof. The payer receives only the condition and the preimage commitment, so the payer cannot finish early.',
+};
+
 /**
- * Setup role only. Returns the preimage the creator already knows.
- * A releaser who was not given this object cannot finish the XRPL escrow
- * until `reveal` writes the preimage into contract state.
- * The creator can still submit EscrowFinish directly. XRPL does not check Midnight.
+ * Sample the XRPL preimage for one role.
+ * `publicTerms` is safe to give to the other party: condition and commitment only.
+ * `holder` stays with the sampler. After `reveal`, the preimage is public anyway.
  */
-export function createBoundPreimage() {
+export function samplePreimage(role = 'payer') {
+  if (role !== 'payer' && role !== 'destination') {
+    throw new Error('samplePreimage role must be "payer" or "destination"');
+  }
   const preimage = new Uint8Array(crypto.randomBytes(32));
   const commit = preimageCommit(preimage);
-  const xrpl = xrplConditionFromPreimage(preimage);
+  const xrplCond = xrplConditionFromPreimage(preimage);
   return {
-    role: 'setup',
-    note: 'The setup party knows this preimage and can finish the XRPL escrow without Midnight. Do not give preimage or fulfillment to the releaser.',
-    preimage,
-    preimageCommit: commit,
-    condition: xrpl.condition,
-    fulfillment: xrpl.fulfillment,
+    role,
+    trust: TRUST[role],
+    publicTerms: {
+      condition: xrplCond.condition,
+      preimageCommit: commit,
+    },
+    holder: {
+      role,
+      preimage,
+      fulfillment: xrplCond.fulfillment,
+    },
   };
+}
+
+/** The object the payer is allowed to see. No preimage and no fulfillment. */
+export function payerFacingTerms(sampled) {
+  if (!sampled?.publicTerms?.condition || !sampled?.publicTerms?.preimageCommit) {
+    throw new Error('payerFacingTerms: expected samplePreimage() output');
+  }
+  return {
+    condition: sampled.publicTerms.condition,
+    preimageCommit: sampled.publicTerms.preimageCommit,
+  };
+}
+
+/**
+ * Payer-sampled preimage. Kept for existing callers.
+ * The payer holds the fulfillment and can finish without Midnight.
+ */
+export function createBoundPreimage() {
+  const sampled = samplePreimage('payer');
+  return {
+    role: 'payer',
+    trust: sampled.trust,
+    note: 'The setup party knows this preimage and can finish the XRPL escrow without Midnight. Do not give preimage or fulfillment to the releaser.',
+    preimage: sampled.holder.preimage,
+    preimageCommit: sampled.publicTerms.preimageCommit,
+    condition: sampled.publicTerms.condition,
+    fulfillment: sampled.holder.fulfillment,
+    publicTerms: sampled.publicTerms,
+    holder: sampled.holder,
+  };
+}
+
+/** Constructor argument list for contracts/eligibility.compact, in source order. */
+export function eligibilityDeployArgs(o) {
+  const binding = encodeEscrowBinding(o.escrow);
+  const issuer = o.issuer?.publicKey ?? o.issuer;
+  if (issuer?.x == null || issuer?.y == null) throw new Error('eligibilityDeployArgs: issuer public key is required');
+  return [
+    issuer.x,
+    issuer.y,
+    pad32(o.credentialType),
+    BigInt(o.asOf),
+    bytes32(o.preimageCommit ?? o.publicTerms?.preimageCommit),
+    binding.owner,
+    binding.offerSequence,
+    binding.destination,
+  ];
 }
 
 async function loadContract(managedRoot) {

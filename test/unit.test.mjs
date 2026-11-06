@@ -87,6 +87,93 @@ test('MidnightBackend.submitOnChain uses bridge submitCallTx (mocked, no network
   assert.ok(await b.verify(out.proof));
 });
 
+test('fee helpers read receipt fields and leave missing fees null', async () => {
+  assert.equal(k.feeDropsFromXrplResult({ result: { Fee: '12' } }), '12');
+  assert.equal(k.feeDropsFromXrplResult({ result: { tx_json: { Fee: '350' } } }), '350');
+  assert.equal(k.feeDropsFromXrplResult({ result: { hash: 'abc' } }), null);
+  assert.deepEqual(k.feesFromMidnightReceipt({ fees: { paidFees: 7n, estimatedFees: '8' } }), {
+    paidFees: '7',
+    estimatedFees: '8',
+  });
+  assert.deepEqual(k.feesFromMidnightReceipt({}), { paidFees: null, estimatedFees: null });
+});
+
+test('MidnightBackend eligibility deploy, call, and read use the bridge (no network)', async () => {
+  const calls = [];
+  const bridge = {
+    ...stubBridge(),
+    deployEligibility: async (o) => {
+      calls.push(['deploy', o.credentialType, o.preimageCommit]);
+      if (o.preimage) throw new Error('preimage must not be passed');
+      return {
+        template: 'eligibility',
+        circuit: 'deploy',
+        contractAddress: 'ab'.repeat(32),
+        txId: '01',
+        txHash: 'cd'.repeat(32),
+        blockHeight: 4,
+        fees: { paidFees: '10', estimatedFees: '10' },
+      };
+    },
+    callEligibility: async (o) => {
+      calls.push(['call', o.circuit, o.contractAddress]);
+      return {
+        template: 'eligibility',
+        circuit: o.circuit,
+        contractAddress: o.contractAddress,
+        txId: o.circuit === 'prove' ? '02' : '03',
+        txHash: 'ef'.repeat(32),
+        blockHeight: 5,
+        fees: { paidFees: null, estimatedFees: null },
+      };
+    },
+    readEligibilityState: async (o) => {
+      calls.push(['read', o.contractAddress, Boolean(o.indexerHttpUrl)]);
+      return {
+        found: true,
+        proven: true,
+        preimageRevealed: true,
+        revealedPreimage: new Uint8Array(32).fill(7),
+        ledger: { proven: true },
+        rawLedger: { proven: true },
+      };
+    },
+    closeEligibilitySession: async () => {
+      calls.push(['close']);
+    },
+  };
+  const b = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', mode: 'preprod', bridge });
+  const deployed = await b.deployEligibility({
+    issuer: { publicKey: { x: 1n, y: 2n } },
+    credentialType: 'kyc-pass',
+    asOf: 10n,
+    preimageCommit: new Uint8Array(32).fill(1),
+    escrow: { owner: 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh', offerSequence: 3, destination: 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh' },
+  });
+  assert.equal(deployed.circuit, 'deploy');
+  assert.equal(deployed.fees.paidFees, '10');
+  const proved = await b.callEligibility({
+    circuit: 'prove',
+    contractAddress: deployed.contractAddress,
+    witness: { holderSecret: new Uint8Array(32) },
+  });
+  assert.equal(proved.circuit, 'prove');
+  const revealed = await b.callEligibility({
+    circuit: 'reveal',
+    contractAddress: deployed.contractAddress,
+    witness: { releasePreimage: new Uint8Array(32).fill(9) },
+  });
+  assert.equal(revealed.fees.paidFees, null);
+  const state = await b.readEligibilityState({ contractAddress: deployed.contractAddress, waitMs: 0 });
+  assert.equal(state.preimageRevealed, true);
+  assert.equal(state.revealedPreimage[0], 7);
+  assert.equal(calls.some((c) => c[0] === 'read' && c[2] === true), true);
+  await b.closeEligibilitySession(deployed.contractAddress);
+  assert.deepEqual(calls.at(-1), ['close']);
+  await assert.rejects(b.callEligibility({ circuit: 'attest', contractAddress: 'aa', witness: {} }), /prove/);
+  await assert.rejects(new k.MidnightBackend({}).deployEligibility({}), /blockfrostProjectId/);
+});
+
 test('MidnightBackend.submitOnChain requires config and witness', async () => {
   await assert.rejects(new k.MidnightBackend({}).submitOnChain({ claim: { kind: 'ageOver', minAge: 18, asOfYear: 2026, commitment: 'x' }, witness: { kind: 'ageOver', birthYear: 1990, salt: 's' } }), /blockfrostProjectId/);
   const b = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', bridge: stubBridge() });

@@ -5,11 +5,11 @@
  * Proof backends:
  *   LocalSimulationBackend — NOT zero-knowledge. A local prover checks the private predicate and
  *     signs an Ed25519 attestation. For dev/testing only; clearly labeled in every proof.
- *   MidnightBackend — real Compact circuits (condition / age_over / balance_above). Default mode
- *     `local-circuits` runs the same compiled circuits as midnight/simulate.mjs (no wallet sync).
- *     `preprod` attaches live Preprod contract addresses from deployments.preprod.json and can
- *     verify ledger flags via the indexer. `submitOnChain` posts a new callTx (attest/prove) via
- *     midnight/sdk-bridge.mjs using the existing wallet helpers (bounded sync; no redeploy).
+ *   MidnightBackend — real Compact circuits (condition / age_over / balance_above / eligibility).
+ *     Default mode `local-circuits` runs the original three circuits locally (no wallet sync).
+ *     `preprod` attaches live Preprod contract addresses from deployments.preprod.json.
+ *     `submitOnChain` posts a callTx for those three. `deployEligibility`, `callEligibility`,
+ *     and `readEligibilityState` deploy and run eligibility prove/reveal on Preprod.
  */
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -52,6 +52,7 @@ export type OnChainSubmitResult = {
   txId: string;
   txHash: string;
   blockHeight?: number;
+  fees?: { paidFees: string | null; estimatedFees: string | null };
 };
 
 export type MidnightBridge = {
@@ -79,13 +80,25 @@ export type MidnightBridge = {
   }) => Promise<{ found: boolean; ok: boolean }>;
   /** Submit attest/prove callTx against an already-deployed Preprod contract. */
   submitCallTx?: (o: {
-    template: 'condition' | 'age_over' | 'balance_above';
+    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+    circuit?: 'attest' | 'prove' | 'reveal';
     contractAddress: string;
     witness: Record<string, unknown>;
     managedRoot?: string;
     walletName?: string;
     syncTimeoutMs?: number;
   }) => Promise<OnChainSubmitResult>;
+  deployEligibility?: (o: Record<string, unknown>) => Promise<OnChainSubmitResult>;
+  callEligibility?: (o: Record<string, unknown>) => Promise<OnChainSubmitResult>;
+  readEligibilityState?: (o: Record<string, unknown>) => Promise<{
+    found: boolean;
+    proven: boolean;
+    preimageRevealed: boolean;
+    revealedPreimage: Uint8Array | null;
+    ledger: Record<string, unknown> | null;
+    rawLedger: Record<string, unknown> | null;
+  }>;
+  closeEligibilitySession?: (contractAddress: string) => Promise<void>;
   defaultManagedRoot?: string;
   defaultDeploymentsPath?: string;
 };
@@ -443,6 +456,96 @@ export class MidnightBackend implements ProofBackend {
     }
     return { ...submitted, proof: local };
   }
+
+  /**
+   * Deploy a fresh eligibility contract on Midnight Preprod.
+   * Pass the preimage commitment and escrow binding, not the preimage.
+   * The in-process wallet stays open for callEligibility until closeEligibilitySession.
+   */
+  async deployEligibility(o: {
+    issuer: { publicKey: { x: bigint; y: bigint } };
+    credentialType: string;
+    asOf: bigint | number | string;
+    preimageCommit: Uint8Array;
+    escrow: { owner: string | Uint8Array; offerSequence: number | bigint; destination: string | Uint8Array };
+    witness?: Record<string, unknown>;
+    walletName?: string;
+    syncTimeoutMs?: number;
+  }): Promise<OnChainSubmitResult> {
+    this.requireConfig();
+    const bridge = await this.getBridge();
+    if (!bridge.deployEligibility) {
+      throw new Error(
+        'deployEligibility: bridge.deployEligibility is missing. Use midnight/sdk-bridge.mjs.'
+      );
+    }
+    return bridge.deployEligibility({
+      ...o,
+      walletName: o.walletName ?? this.opts.walletName ?? 'deployer',
+      syncTimeoutMs: o.syncTimeoutMs ?? this.opts.syncTimeoutMs,
+      managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
+    });
+  }
+
+  /** Post eligibility prove() or reveal() on Preprod. Witnesses are caller-supplied and not stored. */
+  async callEligibility(o: {
+    circuit: 'prove' | 'reveal';
+    contractAddress: string;
+    witness: Record<string, unknown>;
+    walletName?: string;
+    syncTimeoutMs?: number;
+  }): Promise<OnChainSubmitResult> {
+    this.requireConfig();
+    if (o?.circuit !== 'prove' && o?.circuit !== 'reveal') {
+      throw new Error('callEligibility: circuit must be "prove" or "reveal"');
+    }
+    const bridge = await this.getBridge();
+    if (!bridge.callEligibility) {
+      throw new Error('callEligibility: bridge.callEligibility is missing. Use midnight/sdk-bridge.mjs.');
+    }
+    return bridge.callEligibility({
+      ...o,
+      walletName: o.walletName ?? this.opts.walletName ?? 'deployer',
+      syncTimeoutMs: o.syncTimeoutMs ?? this.opts.syncTimeoutMs,
+      managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
+    });
+  }
+
+  /**
+   * Read the eligibility ledger from the Preprod indexer.
+   * `revealedPreimage` is set only after reveal() is in the indexed state.
+   */
+  async readEligibilityState(o: { contractAddress: string; waitMs?: number }): Promise<{
+    found: boolean;
+    proven: boolean;
+    preimageRevealed: boolean;
+    revealedPreimage: Uint8Array | null;
+    ledger: Record<string, unknown> | null;
+    rawLedger: Record<string, unknown> | null;
+  }> {
+    this.requireConfig();
+    if (!o?.contractAddress) throw new Error('readEligibilityState: contractAddress is required');
+    const bridge = await this.getBridge();
+    if (!bridge.readEligibilityState) {
+      throw new Error('readEligibilityState: bridge.readEligibilityState is missing. Use midnight/sdk-bridge.mjs.');
+    }
+    const cfg = preprodConfig({
+      BLOCKFROST_MIDNIGHT_PREPROD: this.opts.blockfrostProjectId,
+      MIDNIGHT_PROOF_SERVER: this.opts.proofServer,
+    });
+    return bridge.readEligibilityState({
+      contractAddress: o.contractAddress,
+      waitMs: o.waitMs,
+      indexerHttpUrl: cfg.indexerHttpUrl,
+      indexerWsUrl: cfg.indexerWsUrl,
+      managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
+    });
+  }
+
+  async closeEligibilitySession(contractAddress: string): Promise<void> {
+    const bridge = await this.getBridge();
+    if (bridge.closeEligibilitySession) await bridge.closeEligibilitySession(contractAddress);
+  }
 }
 
 // ---------- Proof helpers ----------
@@ -488,6 +591,26 @@ export async function proveAgeOver(
 }
 
 // ---------- XRPL escrow (non-custodial) ----------
+/** Fee string from an xrpl.js submitAndWait result, in drops. Null when the receipt omits it. */
+export function feeDropsFromXrplResult(result: unknown): string | null {
+  const root = (result as { result?: { Fee?: unknown; tx_json?: { Fee?: unknown } }; Fee?: unknown; tx_json?: { Fee?: unknown } })
+    ?.result ?? (result as { Fee?: unknown; tx_json?: { Fee?: unknown } });
+  const drops = root?.Fee ?? root?.tx_json?.Fee ?? null;
+  return drops == null ? null : String(drops);
+}
+
+/** paidFees / estimatedFees from a Midnight finalization receipt. Null fields mean the receipt omitted them. */
+export function feesFromMidnightReceipt(pub: { fees?: { paidFees?: unknown; estimatedFees?: unknown } } | null | undefined): {
+  paidFees: string | null;
+  estimatedFees: string | null;
+} {
+  const fees = pub?.fees;
+  return {
+    paidFees: fees?.paidFees != null ? String(fees.paidFees) : null,
+    estimatedFees: fees?.estimatedFees != null ? String(fees.estimatedFees) : null,
+  };
+}
+
 /** PREIMAGE-SHA-256 condition. The caller receives the fulfillment immediately.
  *  This function does not bind that fulfillment to a Midnight proof.
  *  The bound path is midnight/eligibility.mjs (see README "Security model").
@@ -521,7 +644,13 @@ export async function createEscrow(
   );
   const meta = r.result.meta as { TransactionResult: string };
   const seq = (r.result as any).tx_json?.Sequence ?? (r.result as any).Sequence;
-  return { hash: r.result.hash, result: meta.TransactionResult, owner: payer.address, offerSequence: seq as number };
+  return {
+    hash: r.result.hash,
+    result: meta.TransactionResult,
+    owner: payer.address,
+    offerSequence: seq as number,
+    feeDrops: feeDropsFromXrplResult(r),
+  };
 }
 
 /** Verifies the proof first; only then submits EscrowFinish. Funds can only go to the escrow's fixed Destination. */
@@ -550,7 +679,7 @@ export async function verifyAndReleaseEscrow(
     { wallet: submitter }
   );
   const res = (r.result.meta as { TransactionResult: string }).TransactionResult;
-  return { released: res === 'tesSUCCESS', reason: res, hash: r.result.hash };
+  return { released: res === 'tesSUCCESS', reason: res, hash: r.result.hash, feeDrops: feeDropsFromXrplResult(r) };
 }
 
 export const XRPL_TESTNET_WSS = 'wss://testnet.xrpl-labs.com';

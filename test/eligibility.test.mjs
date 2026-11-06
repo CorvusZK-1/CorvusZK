@@ -166,6 +166,114 @@ if (elig) {
     );
   });
 
+  test('destination-sampled preimage is not visible to the payer', async () => {
+    const sampled = elig.samplePreimage('destination');
+    const facing = elig.payerFacingTerms(sampled);
+    assert.equal(sampled.role, 'destination');
+    assert.match(sampled.trust, /payer cannot finish early|payer receives only/);
+    assert.equal('preimage' in facing, false);
+    assert.equal('fulfillment' in facing, false);
+    assert.equal(JSON.stringify(facing).includes(Buffer.from(sampled.holder.preimage).toString('hex')), false);
+    const payer = elig.samplePreimage('payer');
+    assert.match(payer.trust, /payer sampled the preimage/i);
+    assert.equal(payer.holder.role, 'payer');
+    assert.throws(() => elig.samplePreimage('seller'), /role/);
+  });
+
+  test('deployEligibility sends the commitment and escrow binding, not the preimage', async () => {
+    const { deployEligibility, callEligibility, closeEligibilitySession, readEligibilityState } = await import(
+      '../midnight/sdk-bridge.mjs'
+    );
+    const sampled = elig.samplePreimage('destination');
+    const issuer = elig.createMockIssuer();
+    const preimage = sampled.holder.preimage;
+    let savedWitness;
+    let proveCalls = 0;
+    const CompiledContract = {
+      make() {
+        return {
+          pipe(...ops) {
+            return ops.reduce((acc, op) => op(acc), { made: true });
+          },
+        };
+      },
+      withWitnesses(w) {
+        savedWitness = w;
+        return (acc) => acc;
+      },
+      withCompiledFileAssets() {
+        return (acc) => acc;
+      },
+    };
+    const deployed = await deployEligibility({
+      issuer,
+      credentialType: 'kyc-pass',
+      asOf: 1_700_000_000n,
+      preimageCommit: sampled.publicTerms.preimageCommit,
+      escrow: escrow(),
+      deps: {
+        assertProofServer: async () => {},
+        openSyncedWallet: async () => ({ ctx: {}, wallet: { stop: async () => {} }, state: {} }),
+        makeProvidersFactory: () => () => ({}),
+        CompiledContract,
+        loadContract: async () => ({ Contract: class {} }),
+        deployContract: async (_providers, spec) => {
+          for (const arg of spec.args) {
+            if (arg instanceof Uint8Array) {
+              assert.equal(Buffer.from(arg).equals(Buffer.from(preimage)), false);
+            }
+          }
+          assert.equal(spec.args.length, 8);
+          assert.equal(spec.args[6], 17n);
+          return {
+            deployTxData: {
+              public: {
+                contractAddress: 'ab'.repeat(32),
+                txId: '11',
+                txHash: 'cd'.repeat(32),
+                blockHeight: 9,
+                fees: { paidFees: '1000', estimatedFees: '1000' },
+              },
+            },
+            callTx: {
+              prove: async () => {
+                proveCalls += 1;
+                return { public: { txId: '22', txHash: 'ee'.repeat(32), blockHeight: 10, fees: { paidFees: '5', estimatedFees: '5' } } };
+              },
+              reveal: async () => ({ public: { txId: '33', txHash: 'ff'.repeat(32), blockHeight: 11 } }),
+            },
+          };
+        },
+      },
+    });
+    assert.equal(deployed.fees.paidFees, '1000');
+    assert.equal(deployed.contractAddress, 'ab'.repeat(32));
+    const secret = holder();
+    await callEligibility({
+      circuit: 'prove',
+      contractAddress: deployed.contractAddress,
+      witness: { holderSecret: secret, expiry: EXPIRY, signature: { nonceX: '1', nonceY: '2', s: '3' } },
+    });
+    const [, got] = savedWitness.holderSecret({ privateState: {} });
+    assert.ok(Buffer.from(got).equals(Buffer.from(secret)));
+    assert.equal(proveCalls, 1);
+    await closeEligibilitySession(deployed.contractAddress);
+
+    const parts = await issued();
+    const revealed = await run(parts, { reveal: true, releasePreimage: parts.bound.preimage });
+    const read = await readEligibilityState({
+      contractAddress: 'ab'.repeat(32),
+      waitMs: 0,
+      deps: {
+        loadContract: async () => ({ ledger: () => revealed.rawLedger }),
+        queryContractState: async () => ({ data: {} }),
+      },
+    });
+    assert.equal(read.preimageRevealed, true);
+    const rel = elig.fulfillmentFromRevealedLedger(read.rawLedger, expectRelease(parts));
+    assert.equal(rel.fulfillment, parts.bound.fulfillment);
+  });
+
   test('releaser helper does not take the setup preimage as an input', async () => {
     const parts = await issued();
     const revealed = await run(parts, { reveal: true, releasePreimage: parts.bound.preimage });

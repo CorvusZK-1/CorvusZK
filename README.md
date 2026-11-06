@@ -10,7 +10,7 @@ Non-custodial TypeScript SDK and Compact templates for **proof-gated XRPL escrow
 
 ## For Buildathon judges
 
-CorvusZK is a developer integration prototype. It is not a new settlement chain and it is not a trustless cross-chain bridge. It connects Compact predicates to a standard XRPL escrow. Current public chain examples for the original three templates are Midnight Preprod and XRPL testnet. The eligibility contract below is compiled and executed locally. It is not deployed on Preprod.
+CorvusZK is a developer integration prototype. It is not a new settlement chain and it is not a trustless cross-chain bridge. It connects Compact predicates to a standard XRPL escrow. Current public chain examples for the original three templates are Midnight Preprod and XRPL testnet. The eligibility contract is compiled in this tree. A fresh Preprod deploy is `npm run live:eligibility` on a machine with Blockfrost credentials and a local proof server. The 3 Nov deployment manifest does not include it.
 
 ### Why XRPL plus Midnight
 
@@ -103,7 +103,16 @@ This section answers four questions as the code behaves today. There are two rel
 
 ### 1. How are Midnight proofs connected to XRPL escrow conditions?
 
-**Bound path.** `createBoundPreimage()` in `midnight/eligibility.mjs` samples 32 random bytes. The XRPL condition is the PREIMAGE-SHA-256 crypto-condition of those bytes (`five-bells-condition`). The Compact constructor stores `persistentHash("corvuszk:preimage:v1" || preimage)`, the escrow owner, the offer sequence, and the destination. It does not store the preimage. Owner and destination are the 20-byte XRPL account id in the first 20 bytes of a 32-byte value, with the rest zero. Sequence is a `Uint<32>`.
+**Bound path.** `samplePreimage(role)` in `midnight/eligibility.mjs` samples 32 random bytes. The XRPL condition is the PREIMAGE-SHA-256 crypto-condition of those bytes (`five-bells-condition`). The Compact constructor stores `persistentHash("corvuszk:preimage:v1" || preimage)`, the escrow owner, the offer sequence, and the destination. It does not store the preimage. Owner and destination are the 20-byte XRPL account id in the first 20 bytes of a 32-byte value, with the rest zero. Sequence is a `Uint<32>`.
+
+Who samples the preimage is a mode:
+
+| Mode | Who may hold the preimage before `reveal()` | Who must be trusted not to finish early |
+|---|---|---|
+| `payer` (`createBoundPreimage()`, `samplePreimage('payer')`) | The payer. `publicTerms` still omits the preimage, but the payer's `holder` object has it. | The payer. The destination cannot finish until reveal, unless the payer shares the preimage. |
+| `destination` (`samplePreimage('destination')`, the default of `npm run live:eligibility`) | The destination (policy party). `payerFacingTerms()` returns only the condition and the commitment. | The destination. The payer cannot finish early, because they never receive the preimage. |
+
+In both modes the sampler can submit `EscrowFinish` before any Midnight proof. XRPL will accept a correct preimage. After `reveal()`, the preimage is public and anyone can finish; the destination is still the one fixed in `EscrowCreate`. The machine that submits `reveal()` also sees the preimage as a witness, which is after `prove()` has succeeded.
 
 `prove()` checks the credential. `reveal()` then checks that hash and writes the preimage into `revealedPreimage`. `fulfillmentFromRevealedLedger` rebuilds the fulfillment from that field and checks that the caller names the same owner, sequence, destination, and condition. The fulfillment opens exactly one XRPL condition: SHA-256 of that preimage.
 
@@ -115,8 +124,8 @@ XRPL links the two systems only through the crypto-condition. A Midnight contrac
 
 | Check | Who verifies it | Where |
 |---|---|---|
-| Mock Schnorr credential, expiry, and non-zero escrow accounts | Compact circuit `eligibility.prove` | In-circuit on toolchain 0.31.1. Locally this is `compact-runtime` executing the circuit. That is not a proof-server proof and not a Preprod transaction. |
-| Preimage matches the commitment | Compact circuit `eligibility.reveal` | Same local execution. |
+| Mock Schnorr credential, expiry, and non-zero escrow accounts | Compact circuit `eligibility.prove` | In-circuit on toolchain 0.31.1. Locally this is `compact-runtime`. On Preprod, `MidnightBackend.callEligibility({ circuit: 'prove' })` asks the local proof server to prove it and the node accepts the tx only if that proof verifies. |
+| Preimage matches the commitment | Compact circuit `eligibility.reveal` | Same split: local runtime, or `callEligibility({ circuit: 'reveal' })` on Preprod. |
 | Owner, sequence, destination, condition | `fulfillmentFromRevealedLedger` | TypeScript, against the ledger object the circuit returned. |
 | Original three predicates | `MidnightBackend` via compiled circuits, or `LocalSimulationBackend` via an Ed25519 signature | Application. `submitOnChain` can also post a Preprod call for those three. |
 | EscrowFinish fulfillment | XRPL | The ledger checks the preimage against the condition. It does not read Midnight. |
@@ -144,9 +153,11 @@ What this does not do:
 
 ### 4. How are funds kept from release without the required proof?
 
-On the bound path, a releaser who was not given the preimage cannot build a valid fulfillment until `reveal()` writes it, and `reveal()` requires a successful `prove()`. The helper will not return a fulfillment from an unrevealed ledger.
+On the bound path, a party who was not given the preimage cannot build a valid fulfillment until `reveal()` writes it, and `reveal()` requires a successful `prove()`. The helper will not return a fulfillment from an unrevealed ledger.
 
-That is not XRPL-enforced proof verification. The setup party who sampled the preimage already possesses a valid fulfillment and can submit `EscrowFinish` with no Midnight transaction. XRPL will accept a correct preimage. The XRP can still go only to the destination fixed in `EscrowCreate`, or back to the payer after `CancelAfter`.
+That is not XRPL-enforced proof verification. The sampler described in the table above already possesses a valid fulfillment and can submit `EscrowFinish` with no Midnight transaction. XRPL will accept a correct preimage. The XRP can still go only to the destination fixed in `EscrowCreate`, or back to the payer after `CancelAfter`.
+
+`MidnightBackend.deployEligibility`, `callEligibility`, and `readEligibilityState` are the Preprod counterparts of the original templates' deploy and `callTx` path. `npm run live:eligibility` runs EscrowCreate, deploy, prove, reveal, an indexer read, and EscrowFinish. The checked-in tests do not execute that live flow. Prerequisites are in [docs/live-eligibility.md](docs/live-eligibility.md).
 
 On the legacy path, the SDK's proof check is in the submitting application. It is not a rule of the XRPL escrow. Possession of the fulfillment is enough to finish.
 
@@ -177,7 +188,7 @@ Start here: [docs/getting-started.md](docs/getting-started.md) · buyer checklis
 | XRPL testnet escrow create/finish | Works (integration test) |
 | `LocalSimulationBackend` | Works. **Not zero-knowledge**: a signed attestation for dev/testing |
 | Compact templates (`condition`, `balance_above`, `age_over`) | Compile with Compact 0.31.1, proving keys generated. Preprod deployments exist. |
-| `eligibility` (mock issuer + escrow nullifier) | Compiles with Compact 0.31.1. Local circuit tests pass. Not deployed on Preprod. Not an XRPL Credential. |
+| `eligibility` (mock issuer + escrow nullifier) | Compiles with Compact 0.31.1. Local circuit tests pass. `MidnightBackend.deployEligibility` / `callEligibility` / `readEligibilityState` and `npm run live:eligibility` can deploy a fresh Preprod instance. Not in the 3 Nov manifest. Not an XRPL Credential. |
 | Midnight Preprod deploy + proof-gated escrow (`midnight/`) | **Live on Preprod (3 Nov 2026)**: condition `45563d2e…52f5` (attest tx `311bfb85…7eda`), age_over `3458e155…2367`, balance_above `8606a637…6c0c`; XRPL testnet EscrowFinish `A289E64F…40AE` released after the proof. Scripts: `ensure-pipeline.sh` syncs a wallet, registers DUST, deploys the 3 templates, runs `attest`, then releases an XRPL escrow (`e2e-escrow.mjs`) |
 | `MidnightBackend` class in the SDK | **Wired**: `prove` / `verify` run compiled Compact circuits via `midnight/sdk-bridge.mjs`. Default `mode: 'local-circuits'` needs no wallet sync. `mode: 'preprod'` attaches live contract addresses. **`submitOnChain`** posts a new Preprod `callTx` (attest/prove) through the same bridge (bounded sync, no redeploy). CLI: `midnight/submit-onchain.mjs`. See [docs/on-chain-submit.md](docs/on-chain-submit.md) |
 

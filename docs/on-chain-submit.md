@@ -2,7 +2,7 @@
 
 How a staff engineer posts a **new** proof transaction (`callTx`: `attest` or `prove`) from the CorvusZK SDK.
 
-**Testnet only.** Requires your own Blockfrost Preprod project, a local proof server, and a funded Preprod wallet with DUST. The SDK never stores seeds or fulfillments. `submitOnChain` covers `condition`, `age_over`, and `balance_above` only. `eligibility` is local circuit execution and is not deployed here.
+**Testnet only.** Requires your own Blockfrost Preprod project, a local proof server, and a funded Preprod wallet with DUST. The SDK never stores seeds or fulfillments. `submitOnChain` covers `condition`, `age_over`, and `balance_above`. `eligibility` uses `deployEligibility`, `callEligibility`, and `readEligibilityState`. The full XRPL-plus-Preprod script is [live-eligibility.md](live-eligibility.md).
 
 ## What this does / does not do
 

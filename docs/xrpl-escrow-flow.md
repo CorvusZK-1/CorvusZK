@@ -19,7 +19,7 @@ Releaser reads `released` from the Midnight indexer ──EscrowFinish(Fulfillme
 ## Bound path (eligibility)
 `midnight/eligibility.mjs` is a second path, for one escrow per contract:
 
-1. Setup samples the preimage, builds the XRPL PREIMAGE-SHA-256 condition, and keeps the fulfillment. The contract stores the hash of the preimage plus owner, offer sequence, and destination.
+1. Either the payer or the destination samples the preimage (`samplePreimage`). The other party receives the condition and the commitment only. The contract stores the hash of the preimage plus owner, offer sequence, and destination. The sampler can still finish early. The other party cannot.
 2. `prove()` checks the mock credential once and writes the escrow nullifier.
 3. `reveal()` publishes the preimage only after that.
 4. The releaser calls `fulfillmentFromRevealedLedger` with the same owner, sequence, destination, and condition. A mismatch throws.
