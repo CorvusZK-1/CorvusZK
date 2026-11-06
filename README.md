@@ -12,6 +12,8 @@ Non-custodial TypeScript SDK and Compact templates for **proof-gated XRPL escrow
 
 CorvusZK is a developer integration prototype. It is not a new settlement chain and it is not a trustless cross-chain bridge. It connects Compact predicates to a standard XRPL escrow. Current public chain examples for the original three templates are Midnight Preprod and XRPL testnet. The eligibility contract is compiled in this tree. A fresh Preprod deploy is `npm run live:eligibility` on a machine with Blockfrost credentials and a local proof server. The 3 Nov deployment manifest does not include it.
 
+**Live testnet run, Nov 6 2026:** [docs/live-run.md](docs/live-run.md) ([receipts](docs/live-run-receipts.json)). Destination-sampled preimage, Preprod deploy, prove, reveal, indexer read, and XRPL testnet `EscrowFinish` `tesSUCCESS`. Fees in that note are this run's receipts only.
+
 ### Why XRPL plus Midnight
 
 XRPL contributes native escrow and a payments-focused settlement rail. Midnight contributes programmable private predicates. Value stays in the payer's native escrow. Sensitive witness inputs are not XRPL transaction fields. The amount, the accounts, and the settlement timing on XRPL stay visible. XRPL does not verify a Midnight proof. See [Security model](#security-model) for the two release paths and what each one actually enforces.
@@ -25,8 +27,8 @@ Witnesses (holder secret, subject commitment, expiry, Schnorr nonce and scalar, 
 | Piece | What it is |
 |---|---|
 | `contracts/condition.compact`, `age_over.compact`, `balance_above.compact` | Predicates compiled with Compact 0.31.1. Deployed on Preprod. Addresses in `midnight/deployments.preprod.json`. |
-| `contracts/eligibility.compact` | Mock-issuer Schnorr check plus one-time escrow binding. Local compact-runtime only in this change. |
-| `MidnightBackend` | Runs the three original circuits. `local-circuits` executes them on this machine. `submitOnChain` can post a Preprod `callTx` for those three. It does not deploy or call `eligibility`. |
+| `contracts/eligibility.compact` | Mock-issuer Schnorr check plus one-time escrow binding. Local tests plus the [Nov 6 live run](docs/live-run.md). |
+| `MidnightBackend` | Runs the three original circuits. `local-circuits` executes them on this machine. `submitOnChain` posts a Preprod `callTx` for those three. `deployEligibility` / `callEligibility` / `readEligibilityState` cover eligibility. |
 | `LocalSimulationBackend` | Ed25519 attestation. Not a zero-knowledge proof. |
 
 The eligibility issuer is created in-process and labeled `MOCK ISSUER`. It is not a regulated KYC or accreditation provider. Field names follow XRPL Credentials (XLS-70) vocabulary. Subject is a commitment, not an account id. No `CredentialCreate` is submitted. Compact toolchain 0.31.1 has no in-circuit Ed25519 or ECDSA verify (`ed25519Verify` is not in that standard library). The circuit verifies Schnorr on the embedded curve exposed by `ecMul` / `ecMulGenerator`, with 96-bit scalars so `s = k + e*sk` does not wrap. That is a demonstration parameter.
