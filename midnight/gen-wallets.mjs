@@ -1,20 +1,18 @@
-// Generates throwaway Midnight PREPROD wallets. Seeds go to midnight/.wallets.preprod.json (mode 600). Prints PUBLIC addresses only.
+// Generates throwaway Midnight PREPROD test wallets (Wallet SDK 2). Seeds go to midnight/.wallets.preprod.json (mode 600).
+// Prints PUBLIC addresses only. Existing seeds are kept.
 import crypto from 'node:crypto'; import fs from 'node:fs';
-import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
-import { createKeystore } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
-import * as ledger from '@midnight-ntwrk/ledger-v8';
-import { DustAddress } from '@midnight-ntwrk/wallet-sdk-address-format';
+import { WalletSeeds } from '@midnight-ntwrk/testkit-js';
+import { createKeystore, NetworkId, DustAddress } from '@midnightntwrk/wallet-sdk';
+import { DustSecretKey } from '@midnightntwrk/ledger-v9';
 const file = new URL('./.wallets.preprod.json', import.meta.url);
 const store = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : {};
 const out = {};
 for (const name of ['deployer', 'user']) {
   store[name] ??= crypto.randomBytes(32).toString('hex');
-  const hd = HDWallet.fromSeed(Buffer.from(store[name], 'hex')); if (hd.type !== 'seedOk') throw hd.error;
-  const r = hd.hdWallet.selectAccount(0).selectRoles([Roles.NightExternal, Roles.Dust]).deriveKeysAt(0);
-  if (r.type !== 'keysDerived') throw new Error('derive failed');
-  const night = createKeystore(r.keys[Roles.NightExternal], 'preprod').getBech32Address().asString();
+  const s = WalletSeeds.fromMasterSeed(store[name]);
+  const night = createKeystore({ kind: 'schnorr', secret: s.unshielded }, NetworkId.NetworkId.PreProd).getBech32Address().asString();
   let dust = 'n/a';
-  try { const dsk = ledger.DustSecretKey.fromSeed(r.keys[Roles.Dust]); dust = DustAddress.encodePublicKey('preprod', dsk.publicKey); } catch (e) { dust = 'derive error: ' + e.message; }
+  try { dust = DustAddress.encodePublicKey('preprod', DustSecretKey.fromSeed(s.dust).publicKey); } catch (e) { dust = 'derive error: ' + e.message; }
   out[name] = { night, dust };
 }
 fs.writeFileSync(file, JSON.stringify(store), { mode: 0o600 });

@@ -9,9 +9,9 @@
  * Env (names only — never print values):
  *   BLOCKFROST_MIDNIGHT_PREPROD   required
  *   MIDNIGHT_PROOF_SERVER         default http://localhost:6300
- *   MN_SYNC_TIMEOUT_MS            default 90000 (fail fast; no multi-hour wait)
+ *   MN_SYNC_TIMEOUT_MS            default 90000 (fail fast; a saved ledger 9 wallet snapshot resumes quickly)
  *
- * Witnesses for the live Preprod contracts deployed 3 Nov 2026 are read from
+ * Witnesses for the live ledger 9 Preprod contracts (deploy.mjs) are read from
  * .contract-secrets.preprod.json when present (mode 600). Callers can instead
  * pass JSON on stdin with { secret|birthYear|balance, salt?, deliveryOk? }.
  * Never logs secrets.
@@ -61,7 +61,8 @@ function loadWitness(t) {
         'Pipe {"birthYear":1990,"salt":"<hex>"} (or template-appropriate fields).'
     );
   }
-  const sec = JSON.parse(fs.readFileSync(secPath, 'utf8'));
+  const all = JSON.parse(fs.readFileSync(secPath, 'utf8'));
+  const sec = all.l9 ?? all; // ledger 9 deployments (deploy.mjs) keep their demo witnesses under l9
   if (t === 'condition') {
     return { secret: Buffer.from(sec.conditionSecret, 'hex'), deliveryOk: true };
   }

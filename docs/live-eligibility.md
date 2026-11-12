@@ -20,7 +20,7 @@ This command is for a machine you control. It is not run by the unit tests.
 3. A local proof server on port 6300:
 
 ```bash
-docker run --rm -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v
+docker run --rm -p 6300:6300 midnightntwrk/proof-server:9.0.0 midnight-proof-server -v
 ```
 
 Health check: `curl -s http://localhost:6300/` should return JSON with `"status":"ok"`. See [proof-server.md](proof-server.md). Whoever runs this server sees the prove and reveal witnesses, including the preimage at reveal time. That is after `prove()` has succeeded.

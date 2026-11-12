@@ -1,12 +1,12 @@
 // CorvusZK end-to-end: XRPL testnet escrow released only after the Midnight Preprod `attest` ZK proof is verified on-chain.
 // Reads the condition contract's public ledger from the Preprod indexer; releases only if released==true and the attest tx is recorded.
 import fs from 'node:fs'; import { WebSocket } from 'ws'; globalThis.WebSocket = WebSocket;
-import { setNetworkId } from '@midnight-ntwrk/midnight-js/network-id';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { preprodConfig } from '../dist/midnight-config.js';
-const xrpl = await import('/workspace/dapps/toolkit/node_modules/xrpl/dist/npm/index.js').then(m => m.default ?? m);
+const xrpl = await import(new URL('../node_modules/xrpl/dist/npm/index.js', import.meta.url).href).then(m => m.default ?? m);
 const k = await import('../dist/index.js');
-setNetworkId('preprod'); const cfg = preprodConfig();
+const cfg = preprodConfig();
+const { decodeContractState } = await import('./sdk-bridge.mjs');
 const dep = JSON.parse(fs.readFileSync(new URL('./deployments.preprod.json', import.meta.url)));
 const cond = dep.deployments?.condition; if (!cond?.contractAddress || !cond.call?.txHash) throw new Error('condition contract not deployed/attested yet');
 const c = new xrpl.Client(k.XRPL_TESTNET_WSS); await c.connect();
@@ -19,7 +19,7 @@ if (esc.result !== 'tesSUCCESS') throw new Error('escrow create failed ' + esc.r
 // Verify the Midnight proof outcome on-chain (the node only accepts the attest tx if its ZK proof verifies).
 const m = await import('./managed/condition/contract/index.js');
 const st = await indexerPublicDataProvider(cfg.indexerHttpUrl, cfg.indexerWsUrl).queryContractState(cond.contractAddress);
-const released = st ? m.ledger(st.data).released : false;
+const released = st ? m.ledger(await decodeContractState(st)).released : false;
 const result = { midnightContract: cond.contractAddress, midnightAttestTx: cond.call.txHash, midnightReleasedFlag: String(released), xrplCreate: esc.hash };
 if (released === true) {
   const tx = await c.autofill({ TransactionType: 'EscrowFinish', Account: seller.address, Owner: esc.owner, OfferSequence: esc.offerSequence, Condition: cc.condition, Fulfillment: cc.fulfillment });

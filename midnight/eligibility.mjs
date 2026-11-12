@@ -319,14 +319,12 @@ async function loadContract(managedRoot) {
   return import(pathToFileURL(modPath).href);
 }
 
-function call(C, contractState, name) {
-  const ctx = rt.createCircuitContext(
-    rt.dummyContractAddress(),
-    '0'.repeat(64),
-    contractState,
-    {}
-  );
-  return C.circuits[name](ctx);
+// compact-runtime 0.21: circuits are async; the new state is in queryContexts[address].
+async function call(C, contractState, name) {
+  const addr = rt.dummyContractAddress();
+  const ctx = rt.createCircuitContext({ circuitId: name, contractAddress: addr, coinPublicKeyOrZswapState: '0'.repeat(64), contractState, privateState: {} });
+  const r = await C.circuits[name](ctx);
+  return { ...r, context: { ...r.context, currentQueryContext: r.context.queryContexts[addr] } };
 }
 
 function witnesses(w) {
@@ -355,7 +353,7 @@ export async function runEligibility(o) {
   const ctor = rt.createConstructorContext({}, '0'.repeat(64));
   const chainIssuer = o.chainIssuer ?? o.issuer;
   const binding = encodeEscrowBinding(o.escrow);
-  const initial = C.initialState(
+  const initial = await C.initialState(
     ctor,
     chainIssuer.publicKey.x,
     chainIssuer.publicKey.y,
@@ -368,15 +366,15 @@ export async function runEligibility(o) {
   );
   let state = initial.currentContractState;
   if (o.only !== 'reveal') {
-    const proved = call(C, state, 'prove');
+    const proved = await call(C, state, 'prove');
     state = proved.context.currentQueryContext.state;
-    if (o.again) call(C, state, 'prove');
+    if (o.again) await call(C, state, 'prove');
   }
   if (o.reveal || o.only === 'reveal') {
     const C2 = new m.Contract(
       witnesses({ ...o, holderSecret, signature, expiry, releasePreimage: o.releasePreimage })
     );
-    const revealed = call(C2, state, 'reveal');
+    const revealed = await call(C2, state, 'reveal');
     state = revealed.context.currentQueryContext.state;
   }
   const ledger = m.ledger(state);

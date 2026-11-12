@@ -22,14 +22,14 @@ export MIDNIGHT_PROOF_SERVER=http://localhost:6300
 export MN_SYNC_TIMEOUT_MS=90000
 ```
 
-Wallet seeds live only in `midnight/.wallets.preprod.json` (gitignored). Contract demo salts for the Nov 3 Preprod deploy live in `midnight/.contract-secrets.preprod.json` (gitignored). Callers may pass their own witnesses instead.
+Wallet seeds live only in `midnight/.wallets.preprod.json` (gitignored). Contract demo salts for the ledger 9 deploy (`deploy.mjs`, stored under `l9`) live in `midnight/.contract-secrets.preprod.json` (gitignored). Callers may pass their own witnesses instead.
 
 ## Proof server (self-hosted)
 
 See [proof-server.md](proof-server.md). Short form:
 
 ```bash
-docker run -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v
+docker run -p 6300:6300 midnightntwrk/proof-server:9.0.0 midnight-proof-server -v
 ```
 
 ## From the SDK
@@ -68,7 +68,7 @@ node submit-onchain.mjs --template age_over --dry-run
 node submit-onchain.mjs --template age_over
 ```
 
-`condition` on the Nov 3 Preprod contract is already `released=true`, so a second `attest` will fail on-chain (by design). Prefer `age_over` or `balance_above` for a repeat demo call, or deploy a fresh contract.
+Submits need a ledger 9 deploy first (`node midnight/deploy.mjs`); the 3 Nov contracts were deployed on ledger 8 and do not match the recompiled artifacts. A `condition` contract can only be released once, so a second `attest` fails on-chain by design.
 
 ## Errors you should expect
 

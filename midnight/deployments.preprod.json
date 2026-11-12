@@ -1,66 +1,171 @@
 {
- "deployerStatus": {
-  "nightBalance": "5000000000",
-  "nightUtxos": 1,
-  "registeredUtxos": 1,
-  "dustBalanceSpeck": "3967250629999999999",
-  "dustCoins": 1,
-  "dustPending": 0,
-  "at": "2026-11-04T01:01:08.760Z"
- },
- "dustRegistration": {
-  "txId": "000b31f54fc5c984b162263246c7b4fc29ce411890226d416adbabdbfeb49608c4",
-  "at": "2026-11-04T00:57:32.147Z"
- },
- "dustRate": {
-  "dustSpeckAt": "3969730729999999999",
-  "speckPerMinute": "2480100000000000",
-  "at": "2026-11-04T01:02:08.773Z"
- },
- "deployments": {
-  "condition": {
-   "contractAddress": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
-   "txId": "00d9a08184d9eb54d72946a3b65f3a8bbad9aee69ce5d115fe569cd52e4e4ee437",
-   "txHash": "8409eae18c2221a56c7ad8da02e3d04581eceb8e17b2c58ffbde91df143d8d3d",
-   "blockHeight": 3269837,
-   "at": "2026-11-04T01:02:27.038Z",
-   "call": {
-    "circuit": "attest",
-    "txId": "00ac0c92ce17d72b2930729338a832355ccaa8a17eb6ed9db5012597a097ad9f0a",
-    "txHash": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
-    "blockHeight": 3269841
-   }
+  "ledger8History": {
+    "note": "Ledger 8 era (before the 9 Nov 2026 Preprod upgrade). Contracts compiled with Compact 0.31.1. Kept as historical receipts.",
+    "deployerStatus": {
+      "nightBalance": "5000000000",
+      "nightUtxos": 1,
+      "registeredUtxos": 1,
+      "dustBalanceSpeck": "3967250629999999999",
+      "dustCoins": 1,
+      "dustPending": 0,
+      "at": "2026-11-04T01:01:08.760Z"
+    },
+    "dustRegistration": {
+      "txId": "000b31f54fc5c984b162263246c7b4fc29ce411890226d416adbabdbfeb49608c4",
+      "at": "2026-11-04T00:57:32.147Z"
+    },
+    "dustRate": {
+      "dustSpeckAt": "3969730729999999999",
+      "speckPerMinute": "2480100000000000",
+      "at": "2026-11-04T01:02:08.773Z"
+    },
+    "deployments": {
+      "condition": {
+        "contractAddress": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
+        "txId": "00d9a08184d9eb54d72946a3b65f3a8bbad9aee69ce5d115fe569cd52e4e4ee437",
+        "txHash": "8409eae18c2221a56c7ad8da02e3d04581eceb8e17b2c58ffbde91df143d8d3d",
+        "blockHeight": 3269837,
+        "at": "2026-11-04T01:02:27.038Z",
+        "call": {
+          "circuit": "attest",
+          "txId": "00ac0c92ce17d72b2930729338a832355ccaa8a17eb6ed9db5012597a097ad9f0a",
+          "txHash": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
+          "blockHeight": 3269841
+        }
+      },
+      "age_over": {
+        "contractAddress": "3458e15536314cd6ed68d20aecec14c66f3d786ad09a871cf057949170ec2367",
+        "txId": "004db6df8569f721f6acd26ae7abfebf6ecd66b5b9a3edd6d4a4f6d2e36ccc683e",
+        "txHash": "2c698d6556560b99bce639aefb674400fa56b8eb3db23f286c8000bf912dc3b8",
+        "blockHeight": 3269846,
+        "at": "2026-11-04T01:03:29.012Z",
+        "call": {
+          "circuit": "prove",
+          "txId": "0046482f277d7eea3a3c0688a7695f3c2603358284303d18a1e61508cb87704f28",
+          "txHash": "744ecf07dc7c52e42f23753f4c3a5a0adca9213beceb8a8693755bad4b165952",
+          "blockHeight": 3290220,
+          "via": "MidnightBackend/submitCallTx",
+          "at": "2026-11-05T11:00:51Z"
+        }
+      },
+      "balance_above": {
+        "contractAddress": "8606a6370f7eabd1b3ecda9303c5ceadc42bb55aff7e009d1a3b23c640fd6c0c",
+        "txId": "005b07acd195480c218ff13e9733e9ce065928977e3a883c2dfdde2dad7abf3058",
+        "txHash": "24d2aadbf3ab660f1e8bbb4448b4f37c8ca9fe8fea8b3da202944766b0db6232",
+        "blockHeight": 3269851,
+        "at": "2026-11-04T01:03:51.915Z"
+      }
+    },
+    "e2e": {
+      "midnightContract": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
+      "midnightAttestTx": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
+      "midnightReleasedFlag": "true",
+      "xrplCreate": "25112E6FCDEB813FC26C56728851368BF19E01CCD37BC09CED6991A0962960EB",
+      "xrplFinish": "A289E64FA9FCB6F6CBD70AD6F86F2D3556B0444726A3425087423DF3315D40AE",
+      "xrplFinishResult": "tesSUCCESS",
+      "at": "2026-11-04T01:04:31.143Z"
+    }
   },
-  "age_over": {
-   "contractAddress": "3458e15536314cd6ed68d20aecec14c66f3d786ad09a871cf057949170ec2367",
-   "txId": "004db6df8569f721f6acd26ae7abfebf6ecd66b5b9a3edd6d4a4f6d2e36ccc683e",
-   "txHash": "2c698d6556560b99bce639aefb674400fa56b8eb3db23f286c8000bf912dc3b8",
-   "blockHeight": 3269846,
-   "at": "2026-11-04T01:03:29.012Z",
-   "call": {
-    "circuit": "prove",
-    "txId": "0046482f277d7eea3a3c0688a7695f3c2603358284303d18a1e61508cb87704f28",
-    "txHash": "744ecf07dc7c52e42f23753f4c3a5a0adca9213beceb8a8693755bad4b165952",
-    "blockHeight": 3290220,
-    "via": "MidnightBackend/submitCallTx",
-    "at": "2026-11-05T11:00:51Z"
-   }
+  "ledger": {
+    "network": "preprod",
+    "ledger": 9,
+    "walletSdk": "2.0.0",
+    "midnightJs": "5.0.0",
+    "compact": "0.36.0",
+    "compactRuntime": "0.21.0",
+    "proofServer": "9.0.0"
   },
-  "balance_above": {
-   "contractAddress": "8606a6370f7eabd1b3ecda9303c5ceadc42bb55aff7e009d1a3b23c640fd6c0c",
-   "txId": "005b07acd195480c218ff13e9733e9ce065928977e3a883c2dfdde2dad7abf3058",
-   "txHash": "24d2aadbf3ab660f1e8bbb4448b4f37c8ca9fe8fea8b3da202944766b0db6232",
-   "blockHeight": 3269851,
-   "at": "2026-11-04T01:03:51.915Z"
+  "deployerStatus": {
+    "protocol": "Settled",
+    "nightBalance": "5000000000",
+    "nightUtxos": 1,
+    "registeredUtxos": 1,
+    "dustBalanceSpeck": "25000000000000000000",
+    "at": "2026-11-12T02:53:38.933Z"
+  },
+  "dustRegistration": {
+    "txId": "00179da74eeb5bf22132adc1ac91b516942872c28cccbc9a64722d6bf493506f0a",
+    "at": "2026-11-12T02:47:02.645Z",
+    "note": "free test NIGHT re-registered for DUST after the ledger 9 upgrade (value is the transaction identifier; afterwards the wallet showed a non-zero DUST balance, see deployerStatus)"
+  },
+  "deployments": {
+    "condition": {
+      "contractAddress": "b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3",
+      "explorer": "https://preprod.midnightexplorer.com/contracts/b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3",
+      "circuit": "deploy",
+      "at": "2026-11-12T02:47:06.000Z",
+      "call": {
+        "circuit": "attest",
+        "contractAddress": "b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3",
+        "txId": "00e2a82699aa15b189c2f987bb1f29ce13a6caee23c276ac159a194373c0c71495",
+        "txHash": "c974a56ea2e257d09701d55c9d82cc6a9dcb7231d565a6324dd0c5b6e343847f",
+        "blockHeight": 3384697,
+        "fees": {
+          "paidFees": "212492342857143",
+          "estimatedFees": "212492342857143"
+        },
+        "txExplorer": "https://preprod.midnightexplorer.com/transactions/c974a56ea2e257d09701d55c9d82cc6a9dcb7231d565a6324dd0c5b6e343847f",
+        "contractExplorer": "https://preprod.midnightexplorer.com/contracts/b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3",
+        "at": "2026-11-12T02:54:02.403Z",
+        "indexerStatus": "SUCCESS"
+      },
+      "txHash": "1c24472691745fea4b864140613a44be6f588fcda8ab6d1f20e6ae73873f437c",
+      "blockHeight": 3384635,
+      "blockTime": "2026-11-12T02:47:06.000Z",
+      "txExplorer": "https://preprod.midnightexplorer.com/transactions/1c24472691745fea4b864140613a44be6f588fcda8ab6d1f20e6ae73873f437c",
+      "recordNote": "deploy tx hash and block read back from the Blockfrost Preprod indexer (first call attempt failed client-side before submit, so the script did not keep the deploy receipt)"
+    },
+    "age_over": {
+      "contractAddress": "838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f",
+      "explorer": "https://preprod.midnightexplorer.com/contracts/838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f",
+      "circuit": "deploy",
+      "at": "2026-11-12T02:47:36.000Z",
+      "call": {
+        "circuit": "prove",
+        "contractAddress": "838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f",
+        "txId": "0053bdadc77c1cb0c4360411064faf6c8ed2764319cd4f3191c96f1f2d40a457f1",
+        "txHash": "fb86e2539597ce7934c10cfc528ea890c4ed2513af25756e2b27218ba59ada89",
+        "blockHeight": 3384701,
+        "fees": {
+          "paidFees": "213147657142858",
+          "estimatedFees": "213147657142858"
+        },
+        "txExplorer": "https://preprod.midnightexplorer.com/transactions/fb86e2539597ce7934c10cfc528ea890c4ed2513af25756e2b27218ba59ada89",
+        "contractExplorer": "https://preprod.midnightexplorer.com/contracts/838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f",
+        "at": "2026-11-12T02:54:27.790Z",
+        "indexerStatus": "SUCCESS"
+      },
+      "txHash": "94a06463280aa11934e4659903d28e0e54afaf830ba728489b932890d99dfa82",
+      "blockHeight": 3384638,
+      "blockTime": "2026-11-12T02:47:36.000Z",
+      "txExplorer": "https://preprod.midnightexplorer.com/transactions/94a06463280aa11934e4659903d28e0e54afaf830ba728489b932890d99dfa82",
+      "recordNote": "deploy tx hash and block read back from the Blockfrost Preprod indexer (first call attempt failed client-side before submit, so the script did not keep the deploy receipt)"
+    },
+    "balance_above": {
+      "contractAddress": "7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b",
+      "explorer": "https://preprod.midnightexplorer.com/contracts/7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b",
+      "circuit": "deploy",
+      "at": "2026-11-12T02:47:54.000Z",
+      "call": {
+        "circuit": "prove",
+        "contractAddress": "7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b",
+        "txId": "00b2c6fcc466c5568c8f6faa4c181712ed06ca265650f53bc5f8ec844fdc2d0bb4",
+        "txHash": "e14168707c2f48a3edd0a5f7bdaaa0aef1cf51c13da456763da1f22b28fabd4f",
+        "blockHeight": 3384705,
+        "fees": {
+          "paidFees": "212493257142858",
+          "estimatedFees": "212493257142858"
+        },
+        "txExplorer": "https://preprod.midnightexplorer.com/transactions/e14168707c2f48a3edd0a5f7bdaaa0aef1cf51c13da456763da1f22b28fabd4f",
+        "contractExplorer": "https://preprod.midnightexplorer.com/contracts/7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b",
+        "at": "2026-11-12T02:54:56.960Z",
+        "indexerStatus": "SUCCESS"
+      },
+      "txHash": "1aab88403471888ef9ab5ab499ca3b3f07fa9e06eb4817f3ba09a12ed60cde80",
+      "blockHeight": 3384641,
+      "blockTime": "2026-11-12T02:47:54.000Z",
+      "txExplorer": "https://preprod.midnightexplorer.com/transactions/1aab88403471888ef9ab5ab499ca3b3f07fa9e06eb4817f3ba09a12ed60cde80",
+      "recordNote": "deploy tx hash and block read back from the Blockfrost Preprod indexer (first call attempt failed client-side before submit, so the script did not keep the deploy receipt)"
+    }
   }
- },
- "e2e": {
-  "midnightContract": "45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5",
-  "midnightAttestTx": "311bfb859032f9fa5c1391eaf7055ff5e3956d418fbbdfd9fcd0e564dee17eda",
-  "midnightReleasedFlag": "true",
-  "xrplCreate": "25112E6FCDEB813FC26C56728851368BF19E01CCD37BC09CED6991A0962960EB",
-  "xrplFinish": "A289E64FA9FCB6F6CBD70AD6F86F2D3556B0444726A3425087423DF3315D40AE",
-  "xrplFinishResult": "tesSUCCESS",
-  "at": "2026-11-04T01:04:31.143Z"
- }
 }

@@ -5,15 +5,14 @@ set -u; cd "$(dirname "$0")"; mkdir -p logs; N=/home/box/node22/bin/node
 export PATH=/home/box/node22/bin:$PATH
 if [ ! -x "$N" ]; then V=$(curl -s https://nodejs.org/dist/index.json | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).find(x=>x.version.startsWith('v22')).version))" 2>/dev/null || echo v22.23.4)
   curl -sfL https://nodejs.org/dist/$V/node-$V-linux-x64.tar.xz -o /tmp/n22.tar.xz && mkdir -p /home/box/node22 && tar -xJf /tmp/n22.tar.xz -C /home/box/node22 --strip-components=1; fi
-[ -d node_modules/@midnight-ntwrk/wallet-sdk-facade ] || npm ci >logs/npm.log 2>&1
-# Guard: exactly one ledger-v8 (a nested 8.1.0 copy breaks deploys with "expected instance of LedgerParameters")
-[ "$(find node_modules -path "*ledger-v8/package.json" | wc -l)" -le 1 ] || npm install >logs/npm-fix.log 2>&1
+[ -d node_modules/@midnightntwrk/wallet-sdk ] || npm ci >logs/npm.log 2>&1  # ledger 9 SDK set (Wallet SDK 2.0.0, Midnight.js 5.0.0)
 [ -d ../node_modules/xrpl ] || (cd .. && npm ci >midnight/logs/npm-root.log 2>&1)
 [ -f ../dist/midnight-config.js ] || (cd .. && npm run build >/dev/null 2>&1)
-if ! curl -s -m3 localhost:6300/version >/dev/null; then
+PS_URL=${MIDNIGHT_PROOF_SERVER:-http://localhost:6300}
+if ! curl -s -m3 $PS_URL/version | grep -q "^9\."; then  # ledger 9 needs proof server 9.0.0
   command -v docker >/dev/null || (cd /tmp && curl -sfL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o d.tgz && tar xzf d.tgz && sudo cp docker/* /usr/local/bin/)
   pgrep dockerd >/dev/null || (sudo nohup dockerd --iptables=false --bridge=none >/tmp/dockerd.log 2>&1 &) ; sleep 6
-  sudo docker start ps >/dev/null 2>&1 || sudo docker run -d --name ps --network host midnightntwrk/proof-server:8.1.3 midnight-proof-server -v >/dev/null; sleep 8; fi
+  sudo docker start ps9 >/dev/null 2>&1 || sudo docker run -d --name ps9 --network host midnightntwrk/proof-server:9.0.0 midnight-proof-server -v >/dev/null; sleep 8; fi
 [ -n "${BLOCKFROST_MIDNIGHT_PREPROD:-}" ] || { echo "BLOCKFROST_MIDNIGHT_PREPROD not set"; exit 1; }
 done_deploy=$($N -e "try{const d=require('./deployments.preprod.json');process.stdout.write(d.deployments?.condition?.call?.txHash?'yes':'no')}catch{process.stdout.write('no')}")
 done_e2e=$($N -e "try{const d=require('./deployments.preprod.json');process.stdout.write(d.e2e?.xrplFinish?'yes':'no')}catch{process.stdout.write('no')}")

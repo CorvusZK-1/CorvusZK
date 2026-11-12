@@ -8,11 +8,15 @@ Non-custodial TypeScript SDK and Compact templates for **proof-gated XRPL escrow
 
 **Buyer brief:** see [WHAT-YOU-GET.md](WHAT-YOU-GET.md) for an honest included / not-included checklist.
 
+**For sale:** this project is available for acquisition. A private Agent Ledger add-on (AI agent permission proofs plus a kill switch) is available to buyers of the project as an optional bundle; it is not part of this public repository.
+
 ## For Buildathon judges
 
 CorvusZK is a developer integration prototype. It is not a new settlement chain and it is not a trustless cross-chain bridge. It connects Compact predicates to a standard XRPL escrow. Current public chain examples for the original three templates are Midnight Preprod and XRPL testnet. The eligibility contract is compiled in this tree. A fresh Preprod deploy is `npm run live:eligibility` on a machine with Blockfrost credentials and a local proof server. The 3 Nov deployment manifest does not include it.
 
-**Live testnet run, Nov 6 2026:** [docs/live-run.md](docs/live-run.md) ([receipts](docs/live-run-receipts.json)). Destination-sampled preimage, Preprod deploy, prove, reveal, indexer read, and XRPL testnet `EscrowFinish` `tesSUCCESS`. Fees in that note are this run's receipts only.
+**Midnight Preprod ledger 9, Nov 11 2026:** after Midnight's 9 Nov Preprod upgrade, the three original templates were recompiled with Compact 0.36.0, redeployed, and each ran a zero-knowledge proof call on Preprod (testnet). Receipts and explorer links: [receipts/ledger9-preprod-2026-11-11.md](receipts/ledger9-preprod-2026-11-11.md). The eligibility template and the XRPL escrow release below were last run live on Nov 6, on ledger 8, and have not been re-run on ledger 9.
+
+**Live testnet run, Nov 6 2026 (ledger 8):** [docs/live-run.md](docs/live-run.md) ([receipts](docs/live-run-receipts.json)). Destination-sampled preimage, Preprod deploy, prove, reveal, indexer read, and XRPL testnet `EscrowFinish` `tesSUCCESS`. Fees in that note are this run's receipts only.
 
 ### Why XRPL plus Midnight
 
@@ -26,7 +30,7 @@ Witnesses (holder secret, subject commitment, expiry, Schnorr nonce and scalar, 
 
 | Piece | What it is |
 |---|---|
-| `contracts/condition.compact`, `age_over.compact`, `balance_above.compact` | Predicates compiled with Compact 0.31.1. Deployed on Preprod. Addresses in `midnight/deployments.preprod.json`. |
+| `contracts/condition.compact`, `age_over.compact`, `balance_above.compact` | Predicates compiled with Compact 0.36.0 (ledger 9). Redeployed on Preprod ledger 9 on 11 Nov 2026 (ledger 8 deploy 3 Nov kept as history). Addresses in `midnight/deployments.preprod.json`. |
 | `contracts/eligibility.compact` | Mock-issuer Schnorr check plus one-time escrow binding. Local tests plus the [Nov 6 live run](docs/live-run.md). |
 | `MidnightBackend` | Runs the three original circuits. `local-circuits` executes them on this machine. `submitOnChain` posts a Preprod `callTx` for those three. `deployEligibility` / `callEligibility` / `readEligibilityState` cover eligibility. |
 | `LocalSimulationBackend` | Ed25519 attestation. Not a zero-knowledge proof. |
@@ -38,19 +42,19 @@ Regulated KYC, credit, and compliance providers are still prospective. This prot
 ### How to run and what counts as evidence
 
 1. Read the status table and [Security model](#security-model). `LocalSimulationBackend` is not zero-knowledge. `npm run example:eligibility` is local circuit execution, not a Preprod transaction.
-2. Reproduce compilation with Compact devtools 0.5.x and compiler **0.31.1** (language 0.23.0, runtime 0.16.0, ledger 8):
+2. Reproduce compilation with compiler **0.36.0** (language 0.28.0, compact-runtime 0.21.0, ledger 9):
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-compact update 0.31.1
+compact update 0.36.0
 compact compile contracts/condition.compact midnight/managed/condition
 compact compile contracts/age_over.compact midnight/managed/age_over
 compact compile contracts/balance_above.compact midnight/managed/balance_above
 compact compile contracts/eligibility.compact midnight/managed/eligibility
 ```
 
-On 6 Nov 2026, `compact compile` 0.31.1 returned exit code 0 for all four, including proving keys. Compiling the original three into the `midnight/managed/<template>` layout matched the committed artifacts byte for byte. Compiling them into an unrelated directory matched every file except `contract/index.js.map`, where `sourceRoot` follows the output path (`../../../../` in this layout, empty otherwise).
+On 11 Nov 2026, `compact compile` 0.36.0 returned exit code 0 for all four (eligibility needed its `sigS` witness typed `JubjubScalar` to avoid a 0.36.0 zkir panic). On 6 Nov 2026, the earlier 0.31.1 compile returned exit code 0 for all four, including proving keys. Compiling the original three into the `midnight/managed/<template>` layout matched the committed artifacts byte for byte. Compiling them into an unrelated directory matched every file except `contract/index.js.map`, where `sourceRoot` follows the output path (`../../../../` in this layout, empty otherwise).
 
 3. Run `npm run demo:offline`, `npm run example:offline`, and `cd midnight && npm ci && npm run simulate` from the repo root (`npm run simulate`). Local circuit execution is not a new on-chain proof transaction.
 4. Run `npm run example:eligibility` after `cd midnight && npm ci`. It prints the mock credential, the public ledger, the refusal before `reveal`, and the fulfillment taken from revealed state. It does not submit XRPL or Midnight transactions.
@@ -126,7 +130,7 @@ XRPL links the two systems only through the crypto-condition. A Midnight contrac
 
 | Check | Who verifies it | Where |
 |---|---|---|
-| Mock Schnorr credential, expiry, and non-zero escrow accounts | Compact circuit `eligibility.prove` | In-circuit on toolchain 0.31.1. Locally this is `compact-runtime`. On Preprod, `MidnightBackend.callEligibility({ circuit: 'prove' })` asks the local proof server to prove it and the node accepts the tx only if that proof verifies. |
+| Mock Schnorr credential, expiry, and non-zero escrow accounts | Compact circuit `eligibility.prove` | In-circuit (written for toolchain 0.31.1, now compiled with 0.36.0). Locally this is `compact-runtime`. On Preprod, `MidnightBackend.callEligibility({ circuit: 'prove' })` asks the local proof server to prove it and the node accepts the tx only if that proof verifies. |
 | Preimage matches the commitment | Compact circuit `eligibility.reveal` | Same split: local runtime, or `callEligibility({ circuit: 'reveal' })` on Preprod. |
 | Owner, sequence, destination, condition | `fulfillmentFromRevealedLedger` | TypeScript, against the ledger object the circuit returned. |
 | Original three predicates | `MidnightBackend` via compiled circuits, or `LocalSimulationBackend` via an Ed25519 signature | Application. `submitOnChain` can also post a Preprod call for those three. |
@@ -189,9 +193,9 @@ Start here: [docs/getting-started.md](docs/getting-started.md) · buyer checklis
 |---|---|
 | XRPL testnet escrow create/finish | Works (integration test) |
 | `LocalSimulationBackend` | Works. **Not zero-knowledge**: a signed attestation for dev/testing |
-| Compact templates (`condition`, `balance_above`, `age_over`) | Compile with Compact 0.31.1, proving keys generated. Preprod deployments exist. |
-| `eligibility` (mock issuer + escrow nullifier) | Compiles with Compact 0.31.1. Local circuit tests pass. `MidnightBackend.deployEligibility` / `callEligibility` / `readEligibilityState` and `npm run live:eligibility` can deploy a fresh Preprod instance. Not in the 3 Nov manifest. Not an XRPL Credential. |
-| Midnight Preprod deploy + proof-gated escrow (`midnight/`) | **Live on Preprod (3 Nov 2026)**: condition `45563d2e…52f5` (attest tx `311bfb85…7eda`), age_over `3458e155…2367`, balance_above `8606a637…6c0c`; XRPL testnet EscrowFinish `A289E64F…40AE` released after the proof. Scripts: `ensure-pipeline.sh` syncs a wallet, registers DUST, deploys the 3 templates, runs `attest`, then releases an XRPL escrow (`e2e-escrow.mjs`) |
+| Compact templates (`condition`, `balance_above`, `age_over`) | Compile with Compact 0.36.0 (ledger 9), proving keys generated. Live on Preprod ledger 9 (redeployed 11 Nov 2026); ledger 8 deployments (3 Nov) kept as history. |
+| `eligibility` (mock issuer + escrow nullifier) | Compiles with Compact 0.36.0. Local circuit tests pass. `MidnightBackend.deployEligibility` / `callEligibility` / `readEligibilityState` and `npm run live:eligibility` can deploy a fresh Preprod instance. Not in the 3 Nov manifest. Not an XRPL Credential. |
+| Midnight Preprod deploy + proof-gated escrow (`midnight/`) | **Live on Preprod ledger 9 (11 Nov 2026)**: condition `b6f78efb…4df3` (attest tx `c974a56e…847f`), age_over `838bb8f2…a16f` (prove tx `fb86e253…da89`), balance_above `7eab3360…284b` (prove tx `e1416870…bd4f`); the XRPL escrow release was not re-run on ledger 9. Earlier ledger 8 run (3 Nov 2026): condition `45563d2e…52f5` (attest tx `311bfb85…7eda`), age_over `3458e155…2367`, balance_above `8606a637…6c0c`; XRPL testnet EscrowFinish `A289E64F…40AE` released after the proof. Scripts: `ensure-pipeline.sh` syncs a wallet, registers DUST, deploys the 3 templates, runs `attest`, then releases an XRPL escrow (`e2e-escrow.mjs`) |
 | `MidnightBackend` class in the SDK | **Wired**: `prove` / `verify` run compiled Compact circuits via `midnight/sdk-bridge.mjs`. Default `mode: 'local-circuits'` needs no wallet sync. `mode: 'preprod'` attaches live contract addresses. **`submitOnChain`** posts a new Preprod `callTx` (attest/prove) through the same bridge (bounded sync, no redeploy). CLI: `midnight/submit-onchain.mjs`. See [docs/on-chain-submit.md](docs/on-chain-submit.md) |
 
 ## Quickstart (5 minutes, no money needed)
