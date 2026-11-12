@@ -3,10 +3,13 @@ import CompactStandardLibrary;
 
 // Mock-issuer eligibility gate for one escrow.
 // The circuit verifies a Schnorr signature on Compact's embedded curve (the
-// curve exposed by ecMul / ecMulGenerator in toolchain 0.31.1). It does not
-// verify Ed25519, and it does not read an XRPL Credential ledger object.
-// Toolchain 0.31.1 has no scalar-field modulo, so signers must use 96-bit
-// scalars. That bound is a demo limit, not a production parameter.
+// curve exposed by ecMul / ecMulGenerator; compiled with Compact 0.36.0 for
+// Midnight ledger 9). It does not verify Ed25519, and it does not read an XRPL
+// Credential ledger object. The demo signer still uses 96-bit scalars (a
+// carry-over from toolchain 0.31.1, which had no scalar-field modulo). That
+// bound is a demo limit, not a production parameter. The s witness is typed
+// JubjubScalar because Compact 0.36.0's zkir backend panics on a Field-to-
+// JubjubScalar cast in this circuit.
 //
 // One contract instance is one XRPL escrow. Constructor fixes the owner,
 // offer sequence, destination, and PREIMAGE-SHA-256 preimage commitment.
@@ -33,7 +36,7 @@ witness holderSecret(): Bytes<32>;
 witness expiry(): Uint<64>;
 witness nonceX(): Field;
 witness nonceY(): Field;
-witness sigS(): Field;
+witness sigS(): JubjubScalar;
 witness releasePreimage(): Bytes<32>;
 
 constructor(
@@ -121,7 +124,7 @@ export circuit prove(): [] {
   const e = challenge(sub, exp, R, P);
   const s = sigS();
   const left = ecMulGenerator(s);
-  const right = ecAdd(R, ecMul(P, e));
+  const right = ecAdd(R, ecMul(P, e as JubjubScalar));
   assert(jubjubPointX(left) == jubjubPointX(right), "bad signature");
   assert(jubjubPointY(left) == jubjubPointY(right), "bad signature");
   proven = true;

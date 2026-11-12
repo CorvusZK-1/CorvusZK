@@ -56,10 +56,11 @@ export async function proveLocal(o) {
   const rt = await loadRuntime();
   const managedRoot = o.managedRoot ?? path.join(here, 'managed');
   const m = await loadContract(o.template, managedRoot);
-  const ctor = () => rt.createConstructorContext({}, '0'.repeat(64));
-  const call = (C, st, name) => {
-    const ctx = rt.createCircuitContext(rt.dummyContractAddress(), '0'.repeat(64), st.currentContractState, {});
-    return C.circuits[name](ctx);
+  const { initialState, runCircuit } = await import('./rt-compat.mjs');
+  // compact-runtime 0.21: async constructor/circuits; state comes back per contract address.
+  const call = async (C, st, name) => {
+    const r = await runCircuit(rt, C, st, name);
+    return { context: { currentQueryContext: { state: r.state } } };
   };
   const B32 = new rt.CompactTypeBytes(32);
   const V = new rt.CompactTypeVector(2, B32);
@@ -75,8 +76,8 @@ export async function proveLocal(o) {
       attesterSecret: (c) => [c.privateState, secret],
       deliveryOk: (c) => [c.privateState, deliveryOk],
     });
-    const st = C.initialState(ctor(), commit, escrowId);
-    const r = call(C, st, 'attest');
+    const st = await initialState(rt, C, commit, escrowId);
+    const r = await call(C, st, 'attest');
     const led = m.ledger(r.context.currentQueryContext.state);
     if (!led.released) throw new Error('condition circuit did not set released');
     const commitmentHex = Buffer.from(commit).toString('hex');
@@ -106,8 +107,8 @@ export async function proveLocal(o) {
       birthYear: (c) => [c.privateState, BigInt(birthYear)],
       salt: (c) => [c.privateState, salt],
     });
-    const st = C.initialState(ctor(), BigInt(minAge), BigInt(asOfYear), commit);
-    const r = call(C, st, 'prove');
+    const st = await initialState(rt, C, BigInt(minAge), BigInt(asOfYear), commit);
+    const r = await call(C, st, 'prove');
     const led = m.ledger(r.context.currentQueryContext.state);
     if (!led.proven) throw new Error('age_over circuit did not set proven');
     const commitmentHex = Buffer.from(commit).toString('hex');
@@ -137,8 +138,8 @@ export async function proveLocal(o) {
       balance: (c) => [c.privateState, BigInt(balance)],
       salt: (c) => [c.privateState, salt],
     });
-    const st = C.initialState(ctor(), BigInt(threshold), commit);
-    const r = call(C, st, 'prove');
+    const st = await initialState(rt, C, BigInt(threshold), commit);
+    const r = await call(C, st, 'prove');
     const led = m.ledger(r.context.currentQueryContext.state);
     if (!led.proven) throw new Error('balance_above circuit did not set proven');
     const commitmentHex = Buffer.from(commit).toString('hex');
@@ -172,17 +173,15 @@ export function loadDeployments(deploymentsPath = path.join(here, 'deployments.p
  * Requires midnight/node_modules and a Blockfrost-backed config (token never logged).
  */
 export async function verifyOnChainLedger(o) {
-  const { setNetworkId } = await import('@midnight-ntwrk/midnight-js/network-id');
   const { indexerPublicDataProvider } = await import(
     '@midnight-ntwrk/midnight-js-indexer-public-data-provider'
   );
-  setNetworkId('preprod');
   const m = await loadContract(o.template, o.managedRoot ?? path.join(here, 'managed'));
   const st = await indexerPublicDataProvider(o.indexerHttpUrl, o.indexerWsUrl).queryContractState(
     o.contractAddress
   );
   if (!st) return { found: false, ok: false };
-  const led = m.ledger(st.data);
+  const led = m.ledger(await decodeContractState(st));
   const ok =
     o.template === 'condition'
       ? led.released === true
@@ -190,6 +189,15 @@ export async function verifyOnChainLedger(o) {
         ? led.proven === true && led.preimageRevealed === true
         : led.proven === true;
   return { found: true, ok, ledger: led };
+}
+
+/** Midnight.js 5 returns era-tagged serialized state; older shapes and test doubles pass through. */
+export async function decodeContractState(read) {
+  if (read?.contractState?.deserialize) {
+    const rt = await loadRuntime();
+    return read.contractState.deserialize({ v9: rt.ContractState }).data;
+  }
+  return read?.data ?? read;
 }
 
 export const defaultManagedRoot = path.join(here, 'managed');
@@ -477,11 +485,9 @@ export async function readEligibilityState(o) {
   const query =
     deps.queryContractState ??
     (async (address) => {
-      const { setNetworkId } = await import('@midnight-ntwrk/midnight-js/network-id');
       const { indexerPublicDataProvider } = await import(
         '@midnight-ntwrk/midnight-js-indexer-public-data-provider'
       );
-      setNetworkId('preprod');
       if (!o.indexerHttpUrl || !o.indexerWsUrl) {
         throw new Error('readEligibilityState: indexerHttpUrl and indexerWsUrl are required');
       }
@@ -492,7 +498,7 @@ export async function readEligibilityState(o) {
   for (;;) {
     const st = await query(o.contractAddress);
     if (st) {
-      const rawLedger = m.ledger(st.data ?? st);
+      const rawLedger = m.ledger(await decodeContractState(st));
       last = {
         found: true,
         proven: rawLedger.proven === true,

@@ -20,7 +20,9 @@
         <a href="#what">What</a>
         <a href="#who">Who</a>
         <a href="#get">What you get</a>
+        <a href="#live">Live status</a>
         <a href="#start">Start</a>
+        <a href="#sale">For sale</a>
       </nav>
     </div>
   </header>
@@ -38,7 +40,7 @@
         <a class="btn primary" href="#start">Try offline in 5 minutes</a>
         <a class="btn ghost" href="#get">See what’s included</a>
       </div>
-      <p class="fine">Testnet / Midnight Preprod in this release. Not a bank. Not custodial. Not audited for mainnet.</p>
+      <p class="fine">Testnet / Midnight Preprod (ledger 9, live since 11 Nov 2026) in this release. Not a bank. Not custodial. Not audited for mainnet.</p>
     </section>
 
     <section id="what" class="wrap panel">
@@ -95,7 +97,27 @@
       </div>
     </section>
 
-    <section id="start" class="wrap panel alt">
+    <section id="live" class="wrap panel alt">
+      <h2>Live on Midnight Preprod ledger 9</h2>
+      <p>
+        Midnight upgraded its Preprod test network to ledger 9 on 9 Nov 2026. On <strong>11 Nov 2026</strong>,
+        CorvusZK was updated to the new Midnight software (Compact 0.36.0, Midnight.js 5.0.0, Wallet SDK 2.0.0,
+        proof server 9.0.0). The <code>condition</code>, <code>age_over</code>, and <code>balance_above</code>
+        templates were redeployed, and each ran a zero-knowledge proof transaction on Preprod.
+      </p>
+      <ul class="bullets">
+        <li><a href="https://preprod.midnightexplorer.com/transactions/fb86e2539597ce7934c10cfc528ea890c4ed2513af25756e2b27218ba59ada89"><code>age_over</code> proof transaction</a></li>
+        <li><a href="https://preprod.midnightexplorer.com/transactions/e14168707c2f48a3edd0a5f7bdaaa0aef1cf51c13da456763da1f22b28fabd4f"><code>balance_above</code> proof transaction</a></li>
+        <li><a href="https://preprod.midnightexplorer.com/transactions/c974a56ea2e257d09701d55c9d82cc6a9dcb7231d565a6324dd0c5b6e343847f"><code>condition</code> attest transaction</a></li>
+        <li><a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/receipts/ledger9-preprod-2026-11-11.md">All 11 Nov receipts</a></li>
+      </ul>
+      <p class="fine">
+        Test network only, using free test tokens. Not mainnet. The eligibility template and the XRPL testnet
+        escrow release were last run live on 6 Nov 2026, on the older ledger 8 network, and have not been re-run on ledger 9.
+      </p>
+    </section>
+
+    <section id="start" class="wrap panel">
       <h2>Start without spending</h2>
       <pre class="code"><code>npm install &amp;&amp; npm run build
 npm run demo:offline
@@ -105,6 +127,18 @@ npm run example:offline</code></pre>
         <a href="https://github.com/CorvusZK-1/CorvusZK">github.com/CorvusZK-1/CorvusZK</a>.
       </p>
       <p class="fine">Requires Node 20+. Blockfrost Preprod tokens stay in your env — never commit them.</p>
+    </section>
+
+    <section id="sale" class="wrap panel alt">
+      <h2>For sale / acquisition inquiries</h2>
+      <p>
+        The CorvusZK project (domain, website, repository administration, docs, and seller-owned assets) is
+        available for acquisition, on its own or bundled with a private Agent Ledger add-on (AI agent permission
+        proofs plus a kill switch) that is not in the public repository. No users or revenue; testnet prototype; unaudited.
+      </p>
+      <p>
+        Inquiries: <a href="https://www.sideprojectors.com/project/108662">CorvusZK on SideProjectors</a>.
+      </p>
     </section>
   </main>
 

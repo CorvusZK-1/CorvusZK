@@ -5,7 +5,7 @@ CorvusZK's on-chain path needs a **local** proof server. Whoever runs the proof 
 ## Start (Docker)
 
 ```bash
-docker run --rm -p 6300:6300 midnightntwrk/proof-server:8.1.3 midnight-proof-server -v
+docker run --rm -p 6300:6300 midnightntwrk/proof-server:9.0.0 midnight-proof-server -v
 ```
 
 Health check:
@@ -23,6 +23,6 @@ export MIDNIGHT_PROOF_SERVER=http://localhost:6300
 
 ## Notes
 
-- Version **8.1.3** matches the pinned Midnight packages under `midnight/package.json`.
+- Version **9.0.0** (Midnight ledger 9) matches the pinned Midnight packages (Wallet SDK 2.0.0, Midnight.js 5.0.0) under `midnight/package.json`.
 - No paid cloud host is required for development. Do not put production private witnesses through a server you do not control.
 - CorvusZK does not purchase or operate a hosted relay for you in this package.

@@ -2,7 +2,7 @@
   "version": 3,
   "file": "index.js",
   "sourceRoot": "../../../../",
-  "sources": ["contracts/balance_above.compact", "compiler/standard-library.compact"],
+  "sources": ["contracts/balance_above.compact", "compiler/zkir-v3-library.compact"],
   "names": [],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAQA;;;;;;;;;;;;;;;;MACA,AAAA,KAKC;;;;;;;;;;;;;;;;;;;;;;OAAA;;;;GAN+G;EAAhH;;;;;UAAY,GAAW;UAAE,GAAY;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IALrC;;;;;;;;;yEAAkC;IAClC;;;;;;;;;yEAAuC;IACvC;;;;;;;;;yEAA8B;IAGW;;;;;;;2HAAqB,GAAC;;yEAAb;IAAgB;;;;;;;2HAAyB,GAAC;;yEAAb;IAAgB;;;;;;;;;yEAAM;;;;;;;GAAW;ECRhH,AAAA,kBAAA;oEAAA;;;EDMA,AAAA,UAA4B;;0DAA5B,OAA4B;;;;;;;;;;;;;;GAAA;EAC5B,AAAA,OAA0B;;0DAA1B,IAA0B;;;;;;;;;;;;;;GAAA;EAE1B,AAAA,QAKC;UAJO,GAAa;;;;uGACkC,GAAC;;kEAA4B;;;;;;;;;;;uIAAa;;4BACxF,GAAC;;oDAAG;;;;;;;;;;;yHAAS;;IACpB;;;;;;;;;yEAAM;;GACP;;;;;;;;;;;;;;;;;;;;IAXD;qCAAA;;;;;;;;;;;0GAAkC;KAAA;IAClC;qCAAA;;;;;;;;;;;0GAAuC;KAAA;IACvC;qCAAA;;;;;;;;;;;0GAA8B;KAAA;;;;;;;;;;;;"
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAQA;;;;;;;;;;;;;;;;MACA,AAAA,KAKC;;;;;;;;;;;;;;;;;;;;;;;OAAA;;;;GAN+G;EAAhH;;;;;UAAY,GAAW;UAAE,GAAY;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IALrC;;;;;;;;;yEAAkC;IAClC;;;;;;;;;yEAAuC;IACvC;;;;;;;;;yEAA8B;IAGW;;;;;;;2HAAqB,GAAC;;yEAAb;IAAgB;;;;;;;2HAAyB,GAAC;;yEAAb;IAAgB;;;;;;;;;yEAAM;;;;;;;GAAW;ECRhH,AAAA,kBAAA;oEAAA;;;EDMA,AAAA,UAA4B;;0DAA5B,OAA4B;;;;;;;;;;;;;;GAAA;EAC5B,AAAA,OAA0B;;0DAA1B,IAA0B;;;;;;;;;;;;;;GAAA;EAE1B,AAAA,cAKC;UAJO,GAAa;;;;wGACkC,GAAC;;kEAA4B;;;;;;;;;;;uIAAa;;4BACxF,GAAC;;oDAAG;;;;;;;;;;;yHAAS;;IACpB;;;;;;;;;yEAAM;;GACP;;;;;;;;;;;;;;;;;;;;IAXD;qCAAA;;;;;;;;;;;0GAAkC;KAAA;IAClC;qCAAA;;;;;;;;;;;0GAAuC;KAAA;IACvC;qCAAA;;;;;;;;;;;0GAA8B;KAAA;;;;;;;;;;;;;;;;;;;;"
 }

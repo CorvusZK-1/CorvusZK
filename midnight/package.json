@@ -1,36 +1,27 @@
 {
   "name": "midnight",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
+  "version": "2.0.0",
   "private": true,
+  "type": "module",
+  "description": "Midnight ledger 9 dependencies (Preprod after the 9 Nov 2026 upgrade)",
+  "engines": {
+    "node": ">=22.12"
+  },
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "^0.16.0",
-    "@midnight-ntwrk/ledger-v8": "^8.1.3",
-    "@midnight-ntwrk/midnight-js": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-contracts": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-level-private-state-provider": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-network-id": "^4.1.1",
-    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "^4.1.1",
-    "@midnight-ntwrk/wallet-sdk-address-format": "^3.1.2",
-    "@midnight-ntwrk/wallet-sdk-dust-wallet": "^4.1.0",
-    "@midnight-ntwrk/wallet-sdk-facade": "^4.0.1",
-    "@midnight-ntwrk/wallet-sdk-hd": "^3.0.2",
-    "@midnight-ntwrk/wallet-sdk-shielded": "^3.0.1",
-    "@midnight-ntwrk/wallet-sdk-unshielded-wallet": "^3.1.0",
+    "@midnight-ntwrk/compact-js": "3.0.0",
+    "@midnight-ntwrk/compact-runtime": "0.21.0",
+    "@midnight-ntwrk/midnight-js": "5.0.0",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "5.0.0",
+    "@midnight-ntwrk/testkit-js": "5.0.0",
+    "@midnightntwrk/ledger-v9": "1.0.1",
+    "@midnightntwrk/wallet-sdk": "2.0.0",
     "rxjs": "^7.8.2",
     "ws": "^8.22.1"
   },
   "overrides": {
-    "@midnight-ntwrk/ledger-v8": "$@midnight-ntwrk/ledger-v8"
+    "@midnightntwrk/ledger-v9": "1.0.1"
   }
 }
