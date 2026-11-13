@@ -32,7 +32,7 @@ The diagram at the top of this page is the legacy path. Its `condition` template
 ## Trust model (honest)
 - XRPL cannot read Midnight. On the legacy path, whoever holds the fulfillment can finish the escrow. The application's `verify` call is not an XRPL rule. Funds can still go only to the fixed destination.
 - On the bound path, a releaser who never received the preimage has to wait for `reveal()`. The setup party does not.
-- Full write-up: the README [Security model](../README.md#security-model).
+- Full write-up: [docs/security-model.md](security-model.md).
 
 ## Fees
 - XRPL: a few drops per transaction plus the escrow reserve (returned when it closes).
