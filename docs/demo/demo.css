@@ -1,0 +1,66 @@
+/* /demo page only; builds on ../styles.css */
+[hidden] { display: none !important; }
+button.btn { font: inherit; font-weight: 600; cursor: pointer; }
+button.btn:disabled { opacity: .55; cursor: default; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+code { font-family: var(--mono); font-size: .9em; background: #070b14; border: 1px solid var(--line); border-radius: 6px; padding: .05rem .35rem; }
+.demo-hero { padding-bottom: 1.5rem; }
+.notice { margin-top: 1.4rem; padding: 1rem 1.2rem; border: 1px solid #5b4a2c; background: rgba(196,165,116,.08); border-radius: var(--radius); color: var(--ink); font-size: .97rem; max-width: 46rem; }
+.notice strong { color: var(--accent); margin-right: .3rem; }
+.section { padding: 2.4rem 0; border-top: 1px solid var(--line); }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.section-head h2 { margin: 0; }
+.controls { display: flex; gap: .6rem; flex-wrap: wrap; }
+.progress { height: 6px; background: var(--bg-alt); border-radius: 99px; overflow: hidden; margin: .4rem 0 1.4rem; }
+.progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .5s ease; }
+
+.flow { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+.flow li { position: relative; margin: 0 0 1rem; padding: 1.1rem 1.2rem 1.1rem 4rem; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); opacity: .38; transition: opacity .4s, border-color .4s, transform .4s; }
+.flow li::before { counter-increment: s; content: counter(s); position: absolute; left: 1.1rem; top: 1.05rem; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: #0b1220; border: 1px solid var(--line); color: var(--muted); }
+.flow li.active { opacity: 1; border-color: var(--accent); transform: translateY(-2px); }
+.flow li.done { opacity: 1; }
+.flow li.done::before { content: "✓"; background: rgba(47,191,113,.15); color: #3ddc84; border-color: #2a6b47; }
+.flow h3 { margin: 0 0 .25rem; color: var(--ink); font-size: 1.08rem; }
+.flow .net { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: .15rem .55rem; border-radius: 99px; margin-left: .4rem; vertical-align: 2px; }
+.net.xrpl { background: rgba(126,182,255,.14); color: var(--accent-2); }
+.net.midnight { background: rgba(196,165,116,.15); color: var(--accent); }
+.flow p { margin: .2rem 0 .6rem; color: var(--muted); }
+.receipt { display: none; margin-top: .6rem; padding: .75rem .9rem; background: #070b14; border: 1px solid var(--line); border-radius: 10px; font-size: .9rem; }
+.flow li.done .receipt, .flow li.active .receipt { display: block; }
+.receipt .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: baseline; margin: .15rem 0; }
+.receipt .k { color: var(--muted); min-width: 7.5rem; }
+.receipt .v { font-family: var(--mono); overflow-wrap: anywhere; }
+.receipt a.v { white-space: nowrap; }
+.ok { color: #3ddc84; font-weight: 700; }
+.bad { color: #ff7a7f; font-weight: 700; }
+.privacy { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .6rem; margin-top: .6rem; }
+.privacy div { border: 1px dashed var(--line); border-radius: 10px; padding: .6rem .8rem; font-size: .88rem; color: var(--muted); }
+.privacy b { display: block; color: var(--ink); margin-bottom: .2rem; }
+.spin { display: inline-block; width: .85em; height: .85em; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -1px; margin-right: .4rem; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+.try { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem; align-items: end; margin: 1.2rem 0; }
+.try label { display: flex; flex-direction: column; gap: .3rem; color: var(--muted); font-size: .9rem; }
+.try input { font: inherit; padding: .6rem .7rem; border-radius: 10px; border: 1px solid var(--line); background: #070b14; color: var(--ink); }
+.try-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.try-out .col { background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.1rem; }
+.try-out .private { border-style: dashed; }
+.try-out dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .35rem .8rem; font-size: .92rem; }
+.try-out dt { color: var(--muted); }
+.try-out dd { margin: 0; font-family: var(--mono); overflow-wrap: anywhere; }
+.verdict { grid-column: 1 / -1; padding: .9rem 1.1rem; border-radius: var(--radius); font-weight: 600; }
+.verdict.pass { background: rgba(47,191,113,.12); border: 1px solid #2a6b47; }
+.verdict.fail { background: rgba(255,90,95,.1); border: 1px solid #6b2a33; }
+
+.live-out { margin: 1rem 0; display: grid; gap: .6rem; }
+.live-out .item { background: var(--bg-alt); border: 1px solid var(--line); border-radius: 10px; padding: .7rem .9rem; font-size: .92rem; }
+.table-scroll { overflow-x: auto; margin: 1rem 0; }
+table.receipts { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+.receipts th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: .5rem; }
+.receipts td { padding: .55rem .5rem; border-bottom: 1px solid #1a2438; vertical-align: top; }
+.receipts td.mono { font-family: var(--mono); }
+.cta p { color: var(--muted); }
+@media (max-width: 640px) { .flow li { padding-left: 3.3rem; } .flow li::before { left: .8rem; } .receipt .k { min-width: 5.6rem; } .receipt .row { flex-wrap: nowrap; } .demo-hero .notice { font-size: .92rem; } }
+#walkthrough .section-head { position: sticky; top: 3.4rem; z-index: 5; background: rgba(11,18,32,.94); backdrop-filter: blur(8px); padding: .7rem 0; margin-top: -.7rem; }
+@media (max-width: 640px) { #walkthrough .section-head h2 { display: none; } #walkthrough .controls { flex-wrap: nowrap; overflow-x: auto; } #walkthrough .controls .btn { padding: .55rem .9rem; font-size: .92rem; } }
