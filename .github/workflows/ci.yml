@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compact-and-tests:
+    name: Compile Compact contracts + offline tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPACT_VERSION: 0.36.0
+      # Turn "midnight runtime missing" skips into failures, so a green run means every suite ran.
+      CORVUSZK_REQUIRE_MIDNIGHT: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            midnight/package-lock.json
+
+      - name: Install the Compact toolchain (compiler ${{ env.COMPACT_VERSION }})
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          compact update "$COMPACT_VERSION"
+          compact compile "+$COMPACT_VERSION" --version
+
+      - name: Compile all 4 contracts and check committed artifacts match
+        run: bash scripts/compile-contracts.sh --check
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd midnight && npm ci
+
+      - name: Build the SDK and check dist/ is up to date
+        run: |
+          npm run build
+          git diff --exit-code -- dist
+
+      - name: Type-check midnight/witnesses.ts against the compiler-generated types
+        run: npm run typecheck:witnesses
+
+      - name: Offline tests (SDK units, eligibility circuit, contract simulator tests)
+        run: npm run test:offline
+
+      - name: Local circuit runs and offline examples
+        run: |
+          npm run simulate
+          npm run demo:offline
+          npm run example:offline
+          npm run example:eligibility
+
+  xrpl-testnet:
+    name: Live XRPL testnet escrow (best effort)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Uses the public XRPL testnet faucet and servers, which are sometimes down or rate limited.
+    # A failure here is reported in the job log but does not fail the workflow.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:xrpl
