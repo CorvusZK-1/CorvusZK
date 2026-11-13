@@ -1,0 +1,119 @@
+{
+ "ledger": {
+  "network": "mainnet",
+  "ledger": 9,
+  "walletSdk": "2.0.0",
+  "midnightJs": "5.0.0",
+  "compact": "0.36.0",
+  "compactRuntime": "0.21.0",
+  "proofServer": "9.0.0",
+  "explorer": "https://www.midnightexplorer.com",
+  "note": "Unaudited. Not for real value. Dedicated CorvusZK mainnet wallet only."
+ },
+ "deployerStatus": {
+  "protocol": "Settled",
+  "nightBalance": "0",
+  "nightUtxos": 0,
+  "registeredUtxos": 0,
+  "dustBalanceSpeck": "116432510670000000",
+  "dustBalanceDust": 116.43251067,
+  "at": "2026-11-13T16:18:01.496Z"
+ },
+ "deployments": {
+  "condition": {
+   "circuit": "deploy",
+   "txId": "002818862a343265fc440bf2321af01f9080cf6ccc9e52f9894400397c943629bb",
+   "txHash": "3ff00e08f0f2e0ad0ef4e7bcb232a8546adc6557301aa65fb97babac3d3a32c2",
+   "blockHeight": 3443129,
+   "fees": {
+    "paidFees": "585215085714286",
+    "estimatedFees": "585215085714286"
+   },
+   "contractAddress": "18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a",
+   "txExplorer": "https://www.midnightexplorer.com/transactions/3ff00e08f0f2e0ad0ef4e7bcb232a8546adc6557301aa65fb97babac3d3a32c2",
+   "contractExplorer": "https://www.midnightexplorer.com/contracts/18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a",
+   "at": "2026-11-13T16:18:22.077Z",
+   "call": {
+    "circuit": "attest",
+    "contractAddress": "18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a",
+    "txId": "0014ad600accfba5fa0f146a36d508edb63e448ba3d73b1a794d3b260500dbdf1e",
+    "txHash": "53d53013bad4e36eda2531177ada92fb925b8cb86732b0de1d85def75ab633c4",
+    "blockHeight": 3443133,
+    "fees": {
+     "paidFees": "247843330144566",
+     "estimatedFees": "247843330144566"
+    },
+    "txExplorer": "https://www.midnightexplorer.com/transactions/53d53013bad4e36eda2531177ada92fb925b8cb86732b0de1d85def75ab633c4",
+    "contractExplorer": "https://www.midnightexplorer.com/contracts/18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a",
+    "at": "2026-11-13T16:18:51.511Z"
+   }
+  },
+  "age_over": {
+   "circuit": "deploy",
+   "txId": "0050b1acbea251b325545f50319eda1b1227aaded807b31e078c7308acc74ff68c",
+   "txHash": "2d122fbb717157e0ef38f4eb502a7ba4cae49f6f860272291f25f1fd3aad2ac3",
+   "blockHeight": 3443136,
+   "fees": {
+    "paidFees": "597383958862674",
+    "estimatedFees": "597383958862674"
+   },
+   "contractAddress": "7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc",
+   "txExplorer": "https://www.midnightexplorer.com/transactions/2d122fbb717157e0ef38f4eb502a7ba4cae49f6f860272291f25f1fd3aad2ac3",
+   "contractExplorer": "https://www.midnightexplorer.com/contracts/7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc",
+   "at": "2026-11-13T16:19:08.545Z",
+   "call": {
+    "circuit": "prove",
+    "contractAddress": "7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc",
+    "txId": "00fe71ec7984409a82e75b250b0e95a2359d2267d6626afad42e165f33936df153",
+    "txHash": "83228532a1386132a1a8c8ea532b1f38d4283dd6d2ea4b437fdbf0da066e0bc0",
+    "blockHeight": 3443139,
+    "fees": {
+     "paidFees": "248745576511567",
+     "estimatedFees": "248745576511567"
+    },
+    "txExplorer": "https://www.midnightexplorer.com/transactions/83228532a1386132a1a8c8ea532b1f38d4283dd6d2ea4b437fdbf0da066e0bc0",
+    "contractExplorer": "https://www.midnightexplorer.com/contracts/7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc",
+    "at": "2026-11-13T16:19:27.993Z"
+   }
+  },
+  "balance_above": {
+   "circuit": "deploy",
+   "txId": "00a5d5d18a7439835f4a1f32abeec5357435e2114bdb857be5f85b7d25141d6de3",
+   "txHash": "868473e0fe143277d95618bd4820dd7ea9ddd5d14ebe0aa280a0394c2d6712b4",
+   "blockHeight": 3443142,
+   "fees": {
+    "paidFees": "590173056930916",
+    "estimatedFees": "590173056930916"
+   },
+   "contractAddress": "8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0",
+   "txExplorer": "https://www.midnightexplorer.com/transactions/868473e0fe143277d95618bd4820dd7ea9ddd5d14ebe0aa280a0394c2d6712b4",
+   "contractExplorer": "https://www.midnightexplorer.com/contracts/8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0",
+   "at": "2026-11-13T16:19:50.449Z",
+   "call": {
+    "circuit": "prove",
+    "contractAddress": "8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0",
+    "txId": "00388dcf8ab5471db23f70ab8defdf81eb7d71c4e06adf3999b3a1df2fd363bf9a",
+    "txHash": "44e9e0c63348d309d68d8edac164a0f9b744326ccd4e42e49c887df6585c790f",
+    "blockHeight": 3443145,
+    "fees": {
+     "paidFees": "247912318408088",
+     "estimatedFees": "247912318408088"
+    },
+    "txExplorer": "https://www.midnightexplorer.com/transactions/44e9e0c63348d309d68d8edac164a0f9b744326ccd4e42e49c887df6585c790f",
+    "contractExplorer": "https://www.midnightexplorer.com/contracts/8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0",
+    "at": "2026-11-13T16:20:14.688Z"
+   }
+  },
+  "eligibility": {
+   "deployError": "ContractExecutionError: first (witnesses) argument to Contract constructor does not contain a function-valued field named holderSecret <- ContractRuntimeError: Failed to construct contract 'eligibility'; check the witnesses supplied by the contract configuration <- CompactError: first (witnesses) argument to Contract constructor does not contain a function-valued field named holderSecret",
+   "at": "2026-11-13T16:20:14.811Z"
+  }
+ },
+ "fees": {
+  "dustBefore": 116.43251067,
+  "paidFromReceiptsDust": 2.517273326572,
+  "successfulTransactions": 6,
+  "note": "paidFromReceiptsDust is the sum of on-chain paidFees for the six successful deploys and proof calls. eligibility was not submitted. Remaining wallet DUST is dustBefore minus this amount, plus generation during the run.",
+  "at": "2026-11-13T16:20:14.688Z"
+ }
+}
