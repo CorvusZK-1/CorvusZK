@@ -23,7 +23,6 @@
         <a href="#live">Live status</a>
         <a href="demo/">Try the demo</a>
         <a href="#start">Start</a>
-        <a href="#sale">For sale</a>
       </nav>
     </div>
   </header>
@@ -60,7 +59,8 @@
         <li><strong>Release</strong> — your app finishes the escrow only after the proof verifies.</li>
       </ol>
       <p>
-        Three templates ship today: <code>condition</code>, <code>age_over</code>, and <code>balance_above</code>.
+        Three claim templates ship today (<code>condition</code>, <code>age_over</code>, <code>balance_above</code>),
+        plus an <code>eligibility</code> contract that binds a one-time credential check to one XRPL escrow.
         Simulation mode teaches the API offline; Midnight mode runs the real compiled circuits.
       </p>
     </section>
@@ -120,9 +120,20 @@
         <li><a href="https://preprod.midnightexplorer.com/transactions/c974a56ea2e257d09701d55c9d82cc6a9dcb7231d565a6324dd0c5b6e343847f"><code>condition</code> attest transaction</a></li>
         <li><a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/receipts/ledger9-preprod-2026-11-11.md">All 11 Nov receipts</a></li>
       </ul>
+      <p>
+        On <strong>12 Nov 2026</strong> (2:55 AM PT) the full eligibility flow also ran live on ledger 9: 20 test XRP
+        locked in an XRPL testnet escrow, the eligibility contract deployed on Preprod, a private <code>prove</code>,
+        then <code>reveal</code>, then the XRPL escrow released (<code>tesSUCCESS</code>) about 88 seconds after it was locked.
+        <a href="demo/">Step through that run</a>.
+      </p>
+      <ul class="bullets">
+        <li><a href="https://preprod.midnightexplorer.com/transactions/88a89d1df54979f400b991cf4b7e152dccacd18950cef3539af7d7f1611a3859">Eligibility <code>prove</code> transaction</a></li>
+        <li><a href="https://testnet.xrpl.org/transactions/194F5D8FD89AFF3E95ACC7A140D2ED2AB6129EA7E6A73A2C7A2A0BAE6634354C">XRPL testnet <code>EscrowFinish</code></a></li>
+        <li><a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/receipts/ledger9-preprod-2026-11-12.md">All 12 Nov receipts</a></li>
+      </ul>
       <p class="fine">
-        Test network only, using free test tokens. Not mainnet. The eligibility template and the XRPL testnet
-        escrow release were last run live on 6 Nov 2026, on the older ledger 8 network, and have not been re-run on ledger 9.
+        Test network only, using free test tokens. Not on mainnet yet. Unaudited. The eligibility issuer is a labeled mock,
+        and XRPL does not verify the Midnight proof itself (see the README security model).
       </p>
     </section>
 
@@ -132,23 +143,10 @@
 npm run demo:offline
 npm run example:offline</code></pre>
       <p>
-        Source and buyer package:
+        Source code (Apache-2.0):
         <a href="https://github.com/CorvusZK-1/CorvusZK">github.com/CorvusZK-1/CorvusZK</a>.
       </p>
       <p class="fine">Requires Node 20+. Blockfrost Preprod tokens stay in your env — never commit them.</p>
-    </section>
-
-    <section id="sale" class="wrap panel alt">
-      <h2>For sale / acquisition inquiries</h2>
-      <p>
-        The CorvusZK project (domain, website, repository administration, docs, and seller-owned assets) is
-        available for acquisition, on its own or bundled with a private Agent Ledger add-on (AI agent permission
-        proofs plus a kill switch) that is not in the public repository. No users or revenue; testnet prototype; unaudited.
-      </p>
-      <p>
-        <strong>Open to offers.</strong> Asking price and details are on the listing.
-        Inquiries: <a href="https://www.sideprojectors.com/project/108662">CorvusZK on SideProjectors</a>.
-      </p>
     </section>
   </main>
 

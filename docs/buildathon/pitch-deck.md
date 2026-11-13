@@ -30,7 +30,7 @@ Private witnesses stay off the XRPL ledger.
 - Live Midnight Preprod deploy + attest + `submitOnChain`  
 - XRPL testnet EscrowFinish released after a real proof  
 - TypeScript SDK (`MidnightBackend` wired) + offline demo in minutes  
-- Docs, SECURITY.md, Apache-2.0 LICENSE, buyer checklist  
+- Docs, SECURITY.md, Apache-2.0 LICENSE, included / not-included checklist  
 - Domain corvuszk.com registered; public-safe tree ready to publish
 
 ## 6. Demo path for judges

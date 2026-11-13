@@ -15,5 +15,5 @@ Wallet: throwaway Preprod test wallet; free test NIGHT only. No real money. Toke
 - `balance_above` contract: https://preprod.midnightexplorer.com/contracts/7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b
   - deploy tx: https://preprod.midnightexplorer.com/transactions/1aab88403471888ef9ab5ab499ca3b3f07fa9e06eb4817f3ba09a12ed60cde80
   - `prove` (ZK proof) tx: https://preprod.midnightexplorer.com/transactions/e14168707c2f48a3edd0a5f7bdaaa0aef1cf51c13da456763da1f22b28fabd4f
-Not re-run on ledger 9: the eligibility template deploy and the XRPL escrow release (their last live run was on ledger 8, 6 Nov 2026).
+Not run on 11 Nov: the eligibility template deploy and the XRPL escrow release. **Update:** both ran live on ledger 9 the next day, 12 Nov 2026 — see [ledger9-preprod-2026-11-12.md](ledger9-preprod-2026-11-12.md).
 Full public data: midnight/deployments.preprod.json.
