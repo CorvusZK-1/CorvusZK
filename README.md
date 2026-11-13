@@ -4,11 +4,12 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Compact 0.36.0](https://img.shields.io/badge/Compact-0.36.0-6f42c1)
 ![Midnight Preprod ledger 9](https://img.shields.io/badge/Midnight-Preprod%20ledger%209-222)
+![Midnight Mainnet](https://img.shields.io/badge/Midnight-Mainnet-0a7)
 ![XRPL testnet](https://img.shields.io/badge/XRPL-testnet-0a7)
 
 **Prove a private fact on Midnight, then release a native XRPL escrow.** CorvusZK is an open-source TypeScript SDK plus four Compact contracts that let an XRPL app hold payment in a standard XRPL escrow until a zero-knowledge check passes on Midnight: "this holder has a valid credential", "age over N", "balance above X", or "condition met". The private inputs never leave the holder's machine. CorvusZK never holds funds or keys.
 
-*Built on [Midnight](https://midnight.network) (Compact, Midnight.js, proof server) and the [XRP Ledger](https://xrpl.org). Midnight Buildathon Wave 3 entry.* Testnet only (Midnight Preprod + XRPL testnet). Unaudited. Not affiliated with the Midnight Foundation, Ripple, or the XRPL Foundation.
+*Built on [Midnight](https://midnight.network) (Compact, Midnight.js, proof server) and the [XRP Ledger](https://xrpl.org). Midnight Buildathon Wave 3 entry.* `condition`, `age_over`, and `balance_above` are live on Midnight mainnet (13 Nov 2026). The eligibility + XRPL escrow path has been proven on Midnight Preprod + XRPL testnet. Unaudited. Not for real value. Not affiliated with the Midnight Foundation, Ripple, or the XRPL Foundation.
 
 ## Judge quick-start (5 minutes)
 
@@ -41,7 +42,7 @@
 
 ## Deployed contracts
 
-All on **Midnight Preprod, ledger 9** (testnet, free test tokens). Machine-readable copy: [`midnight/deployments.preprod.json`](midnight/deployments.preprod.json). Receipts: [11 Nov](receipts/ledger9-preprod-2026-11-11.md), [12 Nov](receipts/ledger9-preprod-2026-11-12.md).
+Preprod records are on **Midnight Preprod, ledger 9** (testnet, free test tokens). Mainnet records are on **Midnight mainnet, ledger 9** (unaudited, not for real value). Machine-readable copies: [`midnight/deployments.preprod.json`](midnight/deployments.preprod.json), [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json). Receipts: [11 Nov](receipts/ledger9-preprod-2026-11-11.md), [12 Nov](receipts/ledger9-preprod-2026-11-12.md).
 
 | Network | Contract | Address | Proof transaction | Date (PT) |
 |---|---|---|---|---|
@@ -49,7 +50,9 @@ All on **Midnight Preprod, ledger 9** (testnet, free test tokens). Machine-reada
 | Preprod | `age_over` | [`838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f`](https://preprod.midnightexplorer.com/contracts/838bb8f23e4413da672fdae86d29c7918da2dab8ab6e32ff9c824357127ea16f) | [`prove` (11 Nov)](https://preprod.midnightexplorer.com/transactions/fb86e2539597ce7934c10cfc528ea890c4ed2513af25756e2b27218ba59ada89) · [`prove` (12 Nov)](https://preprod.midnightexplorer.com/transactions/cdd140eefcb38622f05de9091fd75d39331ff1143d46893aa61bfdaa91b9e455) | 11 Nov 2026 |
 | Preprod | `balance_above` | [`7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b`](https://preprod.midnightexplorer.com/contracts/7eab336024024dfec2787023d0ee5af56818d9199425bb76f1b756570f04284b) | [`prove`](https://preprod.midnightexplorer.com/transactions/e14168707c2f48a3edd0a5f7bdaaa0aef1cf51c13da456763da1f22b28fabd4f) | 11 Nov 2026 |
 | Preprod | `condition` | [`b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3`](https://preprod.midnightexplorer.com/contracts/b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3) | [`attest`](https://preprod.midnightexplorer.com/transactions/c974a56ea2e257d09701d55c9d82cc6a9dcb7231d565a6324dd0c5b6e343847f) | 11 Nov 2026 |
-| **Mainnet** | all four | **Deploying — not live yet.** No mainnet address exists yet. This row will only be filled in after the deploy transactions confirm. | — | — |
+| **Mainnet** | `condition` | [`18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a`](https://www.midnightexplorer.com/contracts/18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a) | [`attest`](https://www.midnightexplorer.com/transactions/53d53013bad4e36eda2531177ada92fb925b8cb86732b0de1d85def75ab633c4) | 13 Nov 2026 |
+| **Mainnet** | `age_over` | [`7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc`](https://www.midnightexplorer.com/contracts/7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc) | [`prove`](https://www.midnightexplorer.com/transactions/83228532a1386132a1a8c8ea532b1f38d4283dd6d2ea4b437fdbf0da066e0bc0) | 13 Nov 2026 |
+| **Mainnet** | `balance_above` | [`8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0`](https://www.midnightexplorer.com/contracts/8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0) | [`prove`](https://www.midnightexplorer.com/transactions/44e9e0c63348d309d68d8edac164a0f9b744326ccd4e42e49c887df6585c790f) | 13 Nov 2026 |
 
 XRPL testnet side of the 12 Nov run: [`EscrowCreate`](https://testnet.xrpl.org/transactions/593F1F56ED7AD8FB7C4C4DF7D78EF2DE41AC3DE085DC476BC30B348F350FAB41) (20 test XRP) and [`EscrowFinish`](https://testnet.xrpl.org/transactions/194F5D8FD89AFF3E95ACC7A140D2ED2AB6129EA7E6A73A2C7A2A0BAE6634354C) (`tesSUCCESS`), about 88 seconds apart. Older ledger 8 records (3–6 Nov 2026) are kept under `ledger8History` in the deployments file and in [docs/live-run.md](docs/live-run.md).
 
@@ -100,11 +103,11 @@ Midnight splits each contract into private state, kept on the user's machine and
 |---|---|
 | Compact contracts (4) | Compile with Compact 0.36.0 (language 0.28.0, compact-runtime 0.21.0, ledger 9). CI recompiles them and checks the committed artifacts match. |
 | Eligibility + XRPL escrow release | **Ran live on Preprod ledger 9 on 12 Nov 2026** (receipts above). First ran on ledger 8 on 6 Nov 2026. The issuer is a labeled **mock**, not a regulated KYC provider and not an XRPL Credential (XLS-70) object. |
-| `condition`, `age_over`, `balance_above` | Deployed on Preprod ledger 9 on 11 Nov 2026, one proof call each (indexer status SUCCESS). `age_over` proved again on 12 Nov. |
+| `condition`, `age_over`, `balance_above` | Deployed on Preprod ledger 9 on 11 Nov 2026, one proof call each (indexer status SUCCESS). `age_over` proved again on 12 Nov. Deployed on Midnight mainnet on 13 Nov 2026, one proof call each. |
 | Tests | Offline suites (SDK units, eligibility circuit, simulator tests for all four contracts) run in CI. The live XRPL testnet escrow test runs as a separate best-effort CI job because it depends on the public faucet. CI does not run live Midnight transactions (that needs a funded wallet and a proof server). |
 | `MidnightBackend` (SDK) | Runs the compiled circuits locally (`local-circuits`), attaches Preprod addresses (`preprod`), posts a Preprod `callTx` (`submitOnChain`), and deploys / calls / reads eligibility instances. |
 | `LocalSimulationBackend` | Ed25519-signed attestation for learning the API offline. **Not zero-knowledge.** |
-| Midnight mainnet | **Not live.** Deploy in progress; no mainnet addresses yet. |
+| Midnight mainnet | **Live for the three templates** (`condition`, `age_over`, `balance_above`) on 13 Nov 2026, one proof call each. Addresses and explorer links are in the table above and in [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json). An `eligibility` instance was not deployed on mainnet (constructor witnesses were incomplete). Unaudited. Not for real value. |
 | Frontend | [corvuszk.com/demo](https://corvuszk.com/demo/) replays the 12 Nov run with explorer links and live XRPL lookups. A wallet-connected live page is not built yet. |
 | Users / revenue | None yet. |
 
@@ -116,7 +119,7 @@ Short version. The full write-up, with tables for each check and replay case, is
 - **What XRPL enforces.** Only the crypto-condition and the fixed destination. XRPL does not verify the Midnight proof. The party who sampled the preimage (the destination, in the default mode) can finish without Midnight and must be trusted not to. The payer never sees the preimage and cannot finish early.
 - **Replay.** A second `prove()` or `reveal()` on the same contract fails. The nullifier changes with owner, sequence, destination or preimage commitment. There is no cross-contract nullifier registry.
 - **Privacy limits.** XRPL amount, accounts and timing stay public. After `reveal()`, the preimage is public.
-- **Other limits.** Mock issuer only. 96-bit demo scalars. Unaudited. Testnet only.
+- **Other limits.** Mock issuer only. 96-bit demo scalars. Unaudited. Not for real value. The eligibility + XRPL escrow path has been proven on testnet only.
 
 ## Who it is for
 
