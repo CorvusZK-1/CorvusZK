@@ -111,3 +111,19 @@ h3 { margin: 0 0 0.7rem; font-size: 1.05rem; color: var(--accent); }
   nav { display: none; }
   .hero { padding-top: 3rem; }
 }
+
+.demo-video { margin: 1.8rem 0 0; max-width: 40rem; }
+.demo-video video {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: #070b14;
+}
+.demo-video figcaption {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-top: 0.55rem;
+}
+.hero.demo-hero .demo-video { max-width: 46rem; }

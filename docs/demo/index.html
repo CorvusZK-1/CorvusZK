@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Try CorvusZK: a proof-gated XRPL escrow, step by step</title>
+  <meta name="description" content="Walk through a real CorvusZK run on testnet: XRP locked in an XRPL escrow, a private eligibility proof on Midnight Preprod, then the escrow released. Every step links to the public block explorer. Nothing to install." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="demo.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1220'/%3E%3Cpath d='M18 40c6-14 22-22 28-10-8 2-14 8-18 18-4-4-8-6-10-8z' fill='%23c4a574'/%3E%3Ccircle cx='40' cy='22' r='3' fill='%23e8eef8'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap brand-row">
+      <a class="brand" href="../">
+        <span class="mark" aria-hidden="true"></span>
+        <span>CorvusZK</span>
+      </a>
+      <nav>
+        <a href="#walkthrough">Walkthrough</a>
+        <a href="#try">Try a private check</a>
+        <a href="#verify">Verify it</a>
+        <a href="../#sale">For sale</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap demo-hero">
+      <p class="eyebrow">Interactive demo · Midnight Preprod + XRPL testnet</p>
+      <h1>Watch a private proof<br />release an XRPL escrow.</h1>
+      <p class="lede">
+        Click through a real CorvusZK run, one step at a time. 20 test XRP were locked in a native XRPL escrow, a
+        zero-knowledge eligibility proof was made on Midnight, and only then was the escrow released. Every step links
+        to the public block explorer so you can check it yourself. Nothing to install, no wallet needed.
+      </p>
+      <figure class="demo-video">
+        <video controls playsinline preload="metadata" poster="../media/corvuszk-demo-poster.jpg" width="1920" height="1080">
+          <source src="../media/corvuszk-demo.mp4" type="video/mp4" />
+          Sorry, your browser can’t play this video. <a href="../media/corvuszk-demo.mp4">Download the 72-second demo</a>.
+        </video>
+        <figcaption>72-second demo: live on Midnight Preprod + XRPL testnet</figcaption>
+      </figure>
+      <div class="notice" role="note">
+        <strong>What you are looking at.</strong>
+        This is a replay of a live run recorded on <b>12 Nov 2026 at 2:55 AM PT</b> (88 seconds end to end).
+        Your browser does not create new transactions; the receipts are real and on public testnets.
+        Testnet only: test XRP and test DUST have no value. The credential issuer in this run is a
+        <b>MOCK</b> issuer for demonstration, not a real KYC provider.
+      </div>
+    </section>
+
+    <section id="walkthrough" class="section wrap">
+      <div class="section-head">
+        <h2>The walkthrough</h2>
+        <div class="controls">
+          <button class="btn primary" id="nextBtn" type="button">Start: lock the XRP →</button>
+          <button class="btn ghost" id="allBtn" type="button">Show all steps</button>
+          <button class="btn ghost" id="resetBtn" type="button" hidden>Start over</button>
+        </div>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+      <ol class="flow" id="steps"></ol>
+      <p class="muted small" id="doneNote" hidden>
+        That is the whole flow: the XRP could only move to the escrow's fixed destination, and only after the private
+        proof was accepted on Midnight. The payer never handed over the release key, and the person who proved
+        eligibility never showed their credential to anyone.
+      </p>
+    </section>
+
+    <section id="try" class="section wrap">
+      <h2>Try a private check yourself</h2>
+      <p class="muted">
+        CorvusZK's <code>age_over</code> template proves "born at least N years before year Y" without revealing the
+        birth year. Below, the same rule runs in your browser so you can see what stays private and what a verifier
+        sees. <b>This in-browser version is an illustration, not a zero-knowledge proof</b>: SHA-256 stands in for
+        Midnight's hash, and nothing leaves your device. The real circuit was
+        <a href="https://preprod.midnightexplorer.com/transactions/cdd140eefcb38622f05de9091fd75d39331ff1143d46893aa61bfdaa91b9e455" target="_blank" rel="noopener">proven on Midnight Preprod at 2:51 AM PT on 12 Nov 2026 ↗</a>.
+      </p>
+      <form class="try" id="tryForm" autocomplete="off">
+        <label>Birth year (private)<input id="birthYear" type="number" min="1900" max="2026" value="1990" required /></label>
+        <label>Minimum age (public)<input id="minAge" type="number" min="1" max="120" value="18" required /></label>
+        <label>As of year (public)<input id="asOf" type="number" min="1900" max="2100" value="2026" required /></label>
+        <button class="btn primary" type="submit">Run the check</button>
+      </form>
+      <div class="try-out" id="tryOut" hidden>
+        <div class="col private">
+          <h3>Stays with you</h3>
+          <dl id="privOut"></dl>
+        </div>
+        <div class="col public">
+          <h3>What a verifier sees</h3>
+          <dl id="pubOut"></dl>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+    </section>
+
+    <section id="verify" class="section wrap">
+      <h2>Verify it yourself</h2>
+      <p class="muted">
+        Check the XRPL side live from your browser. It asks a public XRPL testnet server for each transaction's
+        result. (Midnight transactions open in the Midnight Explorer; links are in each step above and in the table.)
+      </p>
+      <button class="btn primary" id="liveBtn" type="button">Check the XRPL escrow live</button>
+      <div id="liveOut" class="live-out" aria-live="polite"></div>
+      <div class="table-scroll">
+        <table class="receipts">
+          <thead><tr><th>Step</th><th>Network</th><th>Transaction</th><th>Block / ledger</th><th>Result</th></tr></thead>
+          <tbody id="receiptRows"></tbody>
+        </table>
+      </div>
+      <p class="muted small">
+        Honest limits: XRPL does not check the Midnight proof by itself. The escrow's release key is revealed on
+        Midnight only after the proof succeeds, and the party who created that key (here, the destination) is trusted
+        not to release early. The payer cannot. This is a developer toolkit on testnet: unaudited, not on mainnet, no
+        customers yet. Details are in the <a href="https://github.com/CorvusZK-1/CorvusZK#readme" target="_blank" rel="noopener">README security model</a>.
+      </p>
+    </section>
+
+    <section class="section wrap cta">
+      <h2>Want to build on it?</h2>
+      <p>
+        The toolkit is open source: TypeScript SDK, Compact templates and the script that produced this run
+        (<code>npm run live:eligibility</code>). <a href="https://github.com/CorvusZK-1/CorvusZK" target="_blank" rel="noopener">View on GitHub ↗</a>
+        · <a href="../#sale">CorvusZK is for sale</a>
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap muted small">CorvusZK · Testnet demo · Non-custodial: CorvusZK never holds keys or funds.</div>
+  </footer>
+
+  <noscript><div class="wrap notice">This walkthrough needs JavaScript. All receipts are also listed in the
+    <a href="https://github.com/CorvusZK-1/CorvusZK/tree/main/receipts">public receipts folder</a>.</div></noscript>
+  <script src="demo.js"></script>
+</body>
+</html>
