@@ -31,3 +31,4 @@ npm-debug.log*
 # Local backups (keep on disk; do not publish)
 *.bak
 *.bak-*
+midnight-level-db/

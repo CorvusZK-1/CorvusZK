@@ -24,7 +24,7 @@ This is a first Wave 3 submission (no prior Wave 1/2 CorvusZK entry).
 
 ## Dates and public record
 
-Public publication commit `035c80455fe5403e21bbd33cd21d5dfb5efe75f9` (5 Nov 2026, 16:44 PST). `midnight/deployments.preprod.json` records Compact deployments at 2026-11-04T01:02Z (3 Nov 2026 PST) and an SDK `age_over` submit at 2026-11-05T11:00:51Z (5 Nov 2026 PST). Those timestamps support investigation. They do not by themselves prove every feature-development date. The public git history starts with the 5 Nov 2026 commits. https://corvuszk.com returned HTTP 200 on 6 Nov 2026 (GitHub Pages). https://corvuszk-1.github.io/CorvusZK/ redirected there. See [docs/buildathon/wave3-progress.md](docs/buildathon/wave3-progress.md).
+Public publication commit `035c80455fe5403e21bbd33cd21d5dfb5efe75f9` (5 Nov 2026, 16:44 PST). `midnight/deployments.preprod.json` records Compact deployments at 2026-11-04T01:02Z (3 Nov 2026 PST) and an SDK `age_over` submit at 2026-11-05T11:00:51Z (5 Nov 2026 PST). Those timestamps support investigation. They do not by themselves prove every feature-development date. The public git history starts with the 5 Nov 2026 commits. https://corvuszk.com returned HTTP 200 on 6 Nov 2026 (GitHub Pages). https://corvuszk-1.github.io/CorvusZK/ redirected there.
 
 ## How privacy shapes the design
 Private witnesses stay in Midnight Compact circuits. XRPL only sees a standard escrow and a finish gated by verification. CorvusZK never custodies funds or stores seeds/fulfillments.

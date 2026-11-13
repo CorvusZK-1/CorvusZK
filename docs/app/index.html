@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CorvusZK live demo: XRPL escrow released by a Midnight ZK proof</title>
+<!-- Set to the deployed "Run it live" server, e.g. https://live.corvuszk.com. Override with ?api=... -->
+<meta name="corvus-api" content="">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  main{max-width:860px;margin:0 auto;padding:24px}
+  .card{border:1px solid #2a2f3a;border-radius:10px;padding:18px;margin:18px 0}
+  button{font:inherit;padding:10px 16px;border-radius:8px;border:0;background:#5b8cff;color:#fff;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  ol.steps{list-style:none;padding:0} ol.steps li{padding:8px 0;border-bottom:1px solid #2a2f3a}
+  .s-done::before{content:"✓ ";color:#3fb950} .s-running::before{content:"… ";color:#d29922} .s-error::before{content:"✗ ";color:#f85149} .s-wait::before{content:"○ ";color:#888}
+  code,.mono{font-family:ui-monospace,monospace;font-size:.85em;word-break:break-all}
+  .muted{color:#8b949e;font-size:.9em} .warn{color:#d29922}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="/">← corvuszk.com</a></p>
+  <h1>Live demo</h1>
+  <p>An XRPL testnet escrow that only releases after a zero-knowledge proof succeeds on Midnight. The holder's credential stays private; the chain only learns <em>proven = true</em>.</p>
+
+  <section class="card" id="live">
+    <h2>1. Run it live (no wallet needed)</h2>
+    <p class="muted">Run by the CorvusZK test server on a Midnight test network + XRPL testnet. Not your wallet. No real money. A run takes about 1–2 minutes.</p>
+    <p id="health" class="muted">Checking the server…</p>
+    <button id="runBtn" disabled>Run it live</button>
+    <ol class="steps" id="steps"></ol>
+    <div id="result"></div>
+  </section>
+
+  <section class="card" id="wallet">
+    <h2>2. Connect your own Lace wallet (Midnight Preview)</h2>
+    <p class="muted">Needs the Lace wallet with Midnight on the Preview network. Your wallet asks before anything is signed.</p>
+    <button id="connectBtn">Connect Lace</button>
+    <div id="walletOut" class="mono"></div>
+    <h3>Read a contract from the Preview indexer</h3>
+    <p class="muted">Paste an eligibility contract address (for example one from a live run above) to read its public state straight from Midnight. No server involved.</p>
+    <input id="addr" class="mono" size="66" placeholder="contract address (hex)"> <button id="readBtn">Read</button>
+    <pre id="readOut" class="mono"></pre>
+  </section>
+
+  <p class="muted">Source: <a href="https://github.com/CorvusZK-1/CorvusZK">github.com/CorvusZK-1/CorvusZK</a> (Apache-2.0). Server code: <code>server/</code>.</p>
+</main>
+<script type="module">
+const STEPS = [
+  ['xrpl-lock', 'Lock XRP in a testnet escrow (crypto-condition)'],
+  ['deploy', 'Deploy an eligibility contract on Midnight bound to the escrow'],
+  ['prove', 'Prove the private credential (zero-knowledge)'],
+  ['reveal', 'Reveal the release key (only allowed after the proof)'],
+  ['read', 'Read the revealed key from the Midnight indexer'],
+  ['xrpl-release', 'Release the XRPL escrow with that key'],
+];
+const qs = new URLSearchParams(location.search);
+const API = (qs.get('api') || document.querySelector('meta[name=corvus-api]').content || '').replace(/\/$/, '');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const link = (url, text) => url && /^https:\/\//.test(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
+
+function renderSteps(events) {
+  const last = {};
+  for (const e of events) if (e.step) last[e.step] = e;
+  $('steps').innerHTML = STEPS.map(([k, label]) => {
+    const e = last[k]; const st = e ? e.status : 'wait';
+    let extra = '';
+    if (e?.tx?.hash) extra += ` <span class="mono">${link(e.tx.explorer || e.tx.explorerUrl, e.tx.hash.slice(0, 16) + '…')}</span>`;
+    if (e?.contractAddress) extra += ` <span class="mono">${link(e.contractExplorer, e.contractAddress.slice(0, 16) + '…')}</span>`;
+    if (e?.ledger) extra += ` <span class="muted">proven=${e.ledger.proven}</span>`;
+    return `<li class="s-${esc(st)}">${esc(label)}${extra}</li>`;
+  }).join('');
+  const err = events.find((e) => e.step === 'error');
+  if (err) $('result').innerHTML = `<p class="warn">Run failed: ${esc(err.detail)}</p>`;
+}
+
+async function health() {
+  if (!API) { $('health').innerHTML = 'The live server is offline right now. <a href="../demo/">Watch the recorded run</a> or see the on-chain receipts in the README.'; return; }
+  try {
+    const h = await (await fetch(API + '/api/health')).json();
+    $('health').textContent = `Server online · network: ${h.network} · runs left this hour: ${h.runsLeftThisHour}` + (h.queued ? ` · ${h.queued} in queue` : '');
+    $('runBtn').disabled = h.runsLeftThisHour === 0;
+  } catch { $('health').innerHTML = 'The live server is asleep or offline. <a href="../demo/">Watch the recorded run</a> instead.'; }
+}
+
+$('runBtn').onclick = async () => {
+  $('runBtn').disabled = true; $('result').textContent = ''; renderSteps([]);
+  const r = await fetch(API + '/api/runs', { method: 'POST' });
+  const body = await r.json();
+  if (r.status !== 202) { $('result').innerHTML = `<p class="warn">${esc(body.error)} Try again in ${Math.ceil((body.retryAfterSec || 60) / 60)} min.</p>`; return; }
+  if (body.position > 0) $('result').innerHTML = `<p class="muted">Queued (position ${body.position}).</p>`;
+  const es = new EventSource(`${API}/api/runs/${body.id}/events`);
+  let events = [];
+  es.addEventListener('snapshot', (m) => { events = JSON.parse(m.data).events; renderSteps(events); });
+  es.onmessage = (m) => { events.push(JSON.parse(m.data)); renderSteps(events); $('result').textContent = ''; };
+  es.addEventListener('end', (m) => {
+    es.close(); const run = JSON.parse(m.data); renderSteps(run.events);
+    if (run.status === 'done') $('result').innerHTML = `<p>✓ Escrow released in ${esc(run.result?.seconds)} s. Contract: <code>${esc(run.result?.contractAddress)}</code></p>`;
+    if (run.result?.contractAddress) $('addr').value = run.result.contractAddress;
+    health();
+  });
+};
+
+// ---- Lace (DApp Connector API v4) ----
+async function findLace(timeoutMs = 2000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const ws = Object.values(window.midnight || {}).filter((w) => w && typeof w.connect === 'function' && /^4\./.test(String(w.apiVersion || '')));
+    if (ws.length) return ws.find((w) => w.rdns === 'io.lace.wallet') || ws[0];
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return null;
+}
+$('connectBtn').onclick = async () => {
+  const out = $('walletOut');
+  const w = await findLace();
+  if (!w) { out.innerHTML = '<p class="warn">No Midnight wallet found. Install Lace, turn on Midnight, pick the Preview network, then reload.</p>'; return; }
+  try {
+    const api = await w.connect('preview');
+    const status = await api.getConnectionStatus?.();
+    const addr = await api.getShieldedAddresses?.().catch(() => null);
+    const cfg = await api.getConfiguration?.().catch(() => null);
+    out.innerHTML = `<p>Connected to ${esc(w.name || w.rdns)} (API ${esc(w.apiVersion)}) on <b>${esc(status?.networkId ?? 'preview')}</b>.</p>` +
+      (addr ? `<p>Shielded address: ${esc(addr.shieldedAddress ?? JSON.stringify(addr))}</p>` : '') +
+      (cfg?.proverServerUri ? `<p class="muted">Proof server: ${esc(cfg.proverServerUri)}</p>` : '');
+  } catch (e) { out.innerHTML = `<p class="warn">Connect failed: ${esc(e.message || e)}. Check Lace is on Preview.</p>`; }
+};
+
+const PREVIEW_INDEXER = 'https://indexer.preview.midnight.network/api/v4/graphql';
+$('readBtn').onclick = async () => {
+  const a = $('addr').value.trim().replace(/^0x/, '');
+  if (!/^[0-9a-f]{64,}$/i.test(a)) { $('readOut').textContent = 'Enter a hex contract address.'; return; }
+  $('readOut').textContent = 'Reading…';
+  try {
+    const q = { query: 'query($a:HexEncoded!){contractAction(address:$a){__typename state transaction{hash block{height}}}}', variables: { a } };
+    const j = await (await fetch(PREVIEW_INDEXER, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(q) })).json();
+    const c = j.data?.contractAction;
+    $('readOut').textContent = c ? `Found on Preview. Last action: ${c.__typename}, tx ${c.transaction?.hash}, block ${c.transaction?.block?.height}\nState bytes: ${String(c.state).length / 2}` : 'Not found on Preview (runs on the local or Preprod network will not show here).';
+  } catch (e) { $('readOut').textContent = 'Indexer error: ' + (e.message || e); }
+};
+health();
+</script>
+</body>
+</html>

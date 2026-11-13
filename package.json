@@ -15,7 +15,7 @@
     "example:offline": "node examples/escrow-offline.mjs",
     "example:eligibility": "node examples/eligibility-release.mjs",
     "live:eligibility": "npm run build && node midnight/live-eligibility.mjs",
-    "test:offline": "node --test test/unit.test.mjs test/eligibility.test.mjs test/templates.test.mjs",
+    "test:offline": "node --test test/unit.test.mjs test/eligibility.test.mjs test/templates.test.mjs test/server.test.mjs",
     "test:xrpl": "node --test test/xrpl.integration.test.mjs",
     "typecheck:witnesses": "tsc -p midnight/tsconfig.json",
     "compile:contracts": "bash scripts/compile-contracts.sh",

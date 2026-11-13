@@ -1,0 +1,31 @@
+# One small VM runs everything: proof server + live server + Caddy (free HTTPS).
+# Sized for Oracle Cloud Always Free (Ampere A1, up to 4 OCPU / 24 GB). Measured: proof server ~1.5 GB, live server ~0.65 GB.
+services:
+  proof-server:
+    image: midnightntwrk/proof-server:9.0.0   # amd64 + arm64
+    restart: unless-stopped
+    environment: { PORT: "6300" }
+    mem_limit: 3g
+  live:
+    build: { context: ../.., dockerfile: server/Dockerfile }
+    restart: unless-stopped
+    depends_on: [proof-server]
+    environment:
+      MIDNIGHT_NETWORK: preview
+      MIDNIGHT_PROOF_SERVER: http://proof-server:6300
+      MN_WALLET_DIR: /wallet
+      ALLOWED_ORIGINS: https://corvuszk.com
+      TRUST_PROXY: "1"
+      RUNS_PER_HOUR: "6"
+      RUNS_PER_IP_PER_HOUR: "2"
+    volumes:
+      - ./wallet:/wallet          # .wallets.preview.json lives here (chmod 600). Never commit it.
+    mem_limit: 1500m
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from ${LIVE_HOST:-live.corvuszk.com} --to live:8790
+    volumes: [caddy-data:/data]
+volumes:
+  caddy-data:

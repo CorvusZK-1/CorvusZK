@@ -19,9 +19,39 @@ tkLogger.level = process.env.MN_TESTKIT_LOG ?? 'silent'; // testkit logs configs
 
 export const redactErr = (e) => String(e?.stack || e).replace(/project_id=[^&\s"']+/g, 'project_id=***').replace(/nightpreprod[A-Za-z0-9]+/g, 'nightpreprod***');
 
-export function preprodEnv(env = process.env) {
+/**
+ * Network endpoints. MIDNIGHT_NETWORK=preprod (default) uses Blockfrost and needs BLOCKFROST_MIDNIGHT_PREPROD.
+ * MIDNIGHT_NETWORK=preview uses the Midnight-hosted Preview endpoints, which need no token.
+ */
+export function midnightEnv(env = process.env) {
+  const network = (env.MIDNIGHT_NETWORK ?? 'preprod').toLowerCase();
+  const proofServer = env.MIDNIGHT_PROOF_SERVER ?? 'http://localhost:6300';
+  if (network === 'undeployed' || network === 'local') {
+    // Local devnet (node + indexer in Docker). For tests only.
+    return {
+      walletNetworkId: NetworkId.NetworkId.Undeployed,
+      networkId: 'undeployed',
+      indexer: env.MIDNIGHT_LOCAL_INDEXER ?? 'http://127.0.0.1:8088/api/v4/graphql',
+      indexerWS: env.MIDNIGHT_LOCAL_INDEXER_WS ?? 'ws://127.0.0.1:8088/api/v4/graphql/ws',
+      node: env.MIDNIGHT_LOCAL_NODE ?? 'http://127.0.0.1:9944',
+      nodeWS: env.MIDNIGHT_LOCAL_NODE_WS ?? 'ws://127.0.0.1:9944',
+      proofServer,
+    };
+  }
+  if (network === 'preview') {
+    return {
+      walletNetworkId: NetworkId.NetworkId.Preview,
+      networkId: 'preview',
+      indexer: 'https://indexer.preview.midnight.network/api/v4/graphql',
+      indexerWS: 'wss://indexer.preview.midnight.network/api/v4/graphql/ws',
+      node: 'https://rpc.preview.midnight.network',
+      nodeWS: 'wss://rpc.preview.midnight.network',
+      proofServer,
+    };
+  }
+  if (network !== 'preprod') throw new Error(`MIDNIGHT_NETWORK must be "preprod", "preview" or "undeployed" (got "${network}")`);
   const t = env.BLOCKFROST_MIDNIGHT_PREPROD;
-  if (!t) throw new Error('Set BLOCKFROST_MIDNIGHT_PREPROD (free Blockfrost Midnight Preprod project id)');
+  if (!t) throw new Error('Set BLOCKFROST_MIDNIGHT_PREPROD (free Blockfrost Midnight Preprod project id), or MIDNIGHT_NETWORK=preview');
   const q = `?project_id=${encodeURIComponent(t)}`;
   return {
     walletNetworkId: NetworkId.NetworkId.PreProd,
@@ -30,8 +60,15 @@ export function preprodEnv(env = process.env) {
     indexerWS: `wss://midnight-preprod.blockfrost.io/api/v0/ws${q}`,
     node: `https://rpc.midnight-preprod.blockfrost.io${q}`,
     nodeWS: `wss://rpc.midnight-preprod.blockfrost.io${q}`,
-    proofServer: env.MIDNIGHT_PROOF_SERVER ?? 'http://localhost:6300',
+    proofServer,
   };
+}
+/** Kept for existing callers; follows MIDNIGHT_NETWORK like midnightEnv. */
+export const preprodEnv = midnightEnv;
+
+/** Public explorer links for the active network. */
+export function explorerBase(networkId = midnightEnv().networkId) {
+  return networkId === 'undeployed' ? null : `https://${networkId}.midnightexplorer.com`;
 }
 
 export async function assertProofServer(url = preprodEnv().proofServer) {
@@ -43,8 +80,8 @@ export async function assertProofServer(url = preprodEnv().proofServer) {
 }
 
 function seedFor(name, dir) {
-  const f = path.join(dir, '.wallets.preprod.json');
-  if (!fs.existsSync(f)) throw new Error(`Missing ${f} (throwaway Preprod test wallet seeds)`);
+  const f = path.join(dir, `.wallets.${midnightEnv().networkId}.json`);
+  if (!fs.existsSync(f)) throw new Error(`Missing ${f} (throwaway test wallet seeds)`);
   const s = JSON.parse(fs.readFileSync(f, 'utf8'))[name];
   if (!s) throw new Error(`No wallet named ${name} in ${f}`);
   return s;
@@ -66,7 +103,7 @@ export function summarize(s) {
  * Returns { provider, wallet, env, status, stop }.
  */
 export async function openWallet9({ walletDir, walletName = 'deployer', syncTimeoutMs = 3_600_000, registerDust = true, log = console.log } = {}) {
-  const env = preprodEnv();
+  const env = midnightEnv();
   const seed = seedFor(walletName, walletDir ?? process.env.MN_WALLET_DIR ?? HERE);
   const dir = walletDir ?? process.env.MN_WALLET_DIR ?? HERE;
   const builder = FluentWalletBuilder.forEnvironment(env);
@@ -75,7 +112,7 @@ export async function openWallet9({ walletDir, walletName = 'deployer', syncTime
   const seeds = WalletSeeds.fromMasterSeed(seed);
   const keystore = createKeystore({ kind: 'schnorr', secret: seeds.unshielded }, builder.networkId);
   // Owner-only snapshot (Wallet SDK 2 format) so later runs resume instead of syncing Preprod from genesis.
-  const snapFile = path.join(dir, `.wallet-state.${walletName}.preprod-l9.json`);
+  const snapFile = path.join(dir, `.wallet-state.${walletName}.${env.networkId === 'preprod' ? 'preprod-l9' : env.networkId}.json`);
   let snap = null;
   if (process.env.MN_NO_RESTORE !== '1' && fs.existsSync(snapFile)) { try { snap = JSON.parse(fs.readFileSync(snapFile, 'utf8')); log(new Date().toISOString(), 'restoring ledger 9 wallet snapshot saved', snap.savedAt); } catch { snap = null; } }
   const pick = (k, fresh, restore) => { if (snap?.[k]) { try { return restore(snap[k]); } catch (e) { log('restore failed for', k, '- starting fresh'); } } return fresh(); };
@@ -121,7 +158,7 @@ export async function openWallet9({ walletDir, walletName = 'deployer', syncTime
   await saveSnap();
   if (registerDust && BigInt(status.dustBalanceSpeck) === 0n) {
     const unregistered = state.unshielded.availableCoins.filter((c) => c.utxo.type === unshieldedToken().raw && c.meta.registeredForDustGeneration === false);
-    if (!unregistered.length) throw new Error('DUST is 0 and there are no unregistered NIGHT UTXOs; get test tNIGHT from the free Preprod faucet');
+    if (!unregistered.length) throw new Error('DUST is 0 and there are no unregistered NIGHT UTXOs; get test tNIGHT from the free faucet for this network');
     log(new Date().toISOString(), `registering ${unregistered.length} test NIGHT UTXO(s) for DUST...`);
     const recipe = await wallet.registerNightUtxosForDustGeneration(unregistered, keystore.getPublicKey(), (p) => keystore.signDataAsync(p));
     const txId = await wallet.submitTransaction(await wallet.finalizeRecipe(recipe));
@@ -151,7 +188,7 @@ export function receipt(pub, extra = {}) {
     blockHeight: pub?.blockHeight ?? null,
     fees: { paidFees: pub?.fees?.paidFees != null ? String(pub.fees.paidFees) : null, estimatedFees: pub?.fees?.estimatedFees != null ? String(pub.fees.estimatedFees) : null },
     contractAddress: contractAddress || null,
-    txExplorer: txHash ? `https://preprod.midnightexplorer.com/transactions/${txHash}` : null,
-    contractExplorer: contractAddress ? `https://preprod.midnightexplorer.com/contracts/${contractAddress}` : null,
+    txExplorer: txHash && explorerBase() ? `${explorerBase()}/transactions/${txHash}` : null,
+    contractExplorer: contractAddress && explorerBase() ? `${explorerBase()}/contracts/${contractAddress}` : null,
   };
 }

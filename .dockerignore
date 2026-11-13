@@ -1,0 +1,14 @@
+node_modules
+midnight/node_modules
+midnight/midnight-level-db
+midnight-level-db
+midnight/.wallets*
+midnight/.wallet-state*
+midnight/.contract-secrets*
+midnight/.keys*
+.keys*
+.env*
+*.seed
+*.mnemonic
+.git
+docs/media
