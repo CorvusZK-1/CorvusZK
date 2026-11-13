@@ -30,7 +30,11 @@ function loadMainnetProjectId() {
   return t;
 }
 
+const DRY_RUN = process.argv.includes('--check') || process.argv.includes('--dry-run');
+const ONLY_ELIGIBILITY = process.argv.includes('--only-eligibility') || process.env.MN_ONLY === 'eligibility';
+
 function confirmOrDie() {
+  if (DRY_RUN) return; // local circuit check only; no wallet, no mainnet spend
   const ok = process.env.MN_MAINNET_CONFIRM === 'CORY_APPROVED' || process.argv.includes('--yes');
   if (!ok) {
     throw new Error('Refusing mainnet deploy without MN_MAINNET_CONFIRM=CORY_APPROVED (Cory already approved this run; the flag is the non-interactive confirm).');
@@ -73,20 +77,25 @@ try {
     note: 'Unaudited. Not for real value. Dedicated CorvusZK mainnet wallet only.',
   };
 
-  w = await openWallet9({
-    walletDir: process.env.MN_WALLET_DIR,
-    syncTimeoutMs: Number(process.env.MN_SYNC_TIMEOUT_MS ?? 3_600_000),
-    registerDust: false,
-    log,
-  });
+  let startDust = 0;
+  if (!DRY_RUN) {
+    w = await openWallet9({
+      walletDir: process.env.MN_WALLET_DIR,
+      syncTimeoutMs: Number(process.env.MN_SYNC_TIMEOUT_MS ?? 3_600_000),
+      registerDust: false,
+      log,
+    });
 
-  const startDust = dustFromSpecks(w.status.dustBalanceSpeck);
-  out.deployerStatus = { ...w.status, dustBalanceDust: startDust, at: new Date().toISOString() };
-  save();
-  log('status', JSON.stringify({ ...out.deployerStatus, /* public only already */ }));
-  log(`wallet DUST at sync: ${startDust.toFixed(4)} (need ${NEEDED_DUST} to start)`);
-  if (startDust < NEEDED_DUST) {
-    throw new Error(`Wallet DUST ${startDust.toFixed(4)} is under the ${NEEDED_DUST} DUST start threshold; not deploying.`);
+    startDust = dustFromSpecks(w.status.dustBalanceSpeck);
+    out.deployerStatus = { ...w.status, dustBalanceDust: startDust, at: new Date().toISOString() };
+    save();
+    log('status', JSON.stringify({ ...out.deployerStatus, /* public only already */ }));
+    log(`wallet DUST at sync: ${startDust.toFixed(4)} (need ${NEEDED_DUST} to start)`);
+    if (startDust < NEEDED_DUST) {
+      throw new Error(`Wallet DUST ${startDust.toFixed(4)} is under the ${NEEDED_DUST} DUST start threshold; not deploying.`);
+    }
+  } else {
+    log('dry-run: skipping wallet sync and mainnet submit');
   }
 
   const B32 = new rt.CompactTypeBytes(32), V = new rt.CompactTypeVector(2, B32);
@@ -100,28 +109,66 @@ try {
   const bs = Buffer.from(sec.l9.balSalt, 'hex');
   const enc = (n) => { const b = Buffer.alloc(32); b.writeUInt32LE(n, 0); return new Uint8Array(b); };
 
-  // Placeholder XRPL binding for a demonstration eligibility instance. No real escrow is created.
-  if (!sec.l9.eligibility) {
+  // Demonstration eligibility instance. Constructor args plus holder/issuer
+  // witnesses needed for a later prove() call. Secrets stay in SEC (mode 600) and are never logged.
+  // If a previous run stored constructor args without holderSecret witnesses, replace them:
+  // eligibility was never submitted on mainnet, so new constructor args are safe.
+  async function ensureEligibilitySecrets() {
+    const cur = sec.l9.eligibility;
+    if (cur?.holderSecret && cur?.signature && cur?.expiry != null && cur?.issuerPub && cur?.preimageCommit && cur?.escrow) return;
     const issuer = elig.createMockIssuer();
     const sampled = elig.samplePreimage('destination');
+    const holderSecret = crypto.randomBytes(32);
+    const asOf = Number(BigInt(Math.floor(Date.now() / 1000)));
+    const expiry = asOf + 86_400 * 365;
+    let credential;
+    for (let i = 0; i < 8 && !credential; i++) {
+      try {
+        credential = elig.issueMockCredential(issuer, {
+          holderSecret: new Uint8Array(holderSecret),
+          credentialType: 'kyc-pass',
+          expiry,
+        });
+      } catch (e) {
+        if (!String(e?.message ?? e).includes('wrapped')) throw e;
+      }
+    }
+    if (!credential) throw new Error('Could not issue mock eligibility credential');
     const { Wallet: XrplWallet } = await import('xrpl');
     const placeholderOwner = XrplWallet.generate();
     const placeholderDest = XrplWallet.generate();
     sec.l9.eligibility = {
-      note: 'Demonstration instance only. Mock issuer. Placeholder XRPL accounts — no real escrow, keys discarded.',
+      note: 'Demonstration instance only. Mock issuer. Placeholder XRPL accounts — no real escrow. Holder and issuer secrets stay in this file and are never logged.',
       credentialType: 'kyc-pass',
-      asOf: Number(BigInt(Math.floor(Date.now() / 1000))),
+      asOf,
+      expiry,
       escrow: {
         owner: placeholderOwner.address,
         offerSequence: 1,
         destination: placeholderDest.address,
       },
       preimageCommit: Buffer.from(sampled.publicTerms.preimageCommit).toString('hex'),
+      preimage: Buffer.from(sampled.holder.preimage).toString('hex'),
+      holderSecret: holderSecret.toString('hex'),
+      issuerSecret: issuer.secretKey.toString(),
       issuerPub: { x: issuer.publicKey.x.toString(), y: issuer.publicKey.y.toString() },
+      signature: {
+        nonceX: String(credential.signature.nonceX),
+        nonceY: String(credential.signature.nonceY),
+        s: String(credential.signature.s),
+      },
     };
     saveSec();
   }
+  await ensureEligibilitySecrets();
   const eligSec = sec.l9.eligibility;
+  const eligHolder = new Uint8Array(Buffer.from(eligSec.holderSecret, 'hex'));
+  const eligExpiry = BigInt(eligSec.expiry);
+  const eligSig = {
+    nonceX: BigInt(eligSec.signature.nonceX),
+    nonceY: BigInt(eligSec.signature.nonceY),
+    s: BigInt(eligSec.signature.s),
+  };
 
   const specs = {
     condition: {
@@ -139,8 +186,18 @@ try {
       args: [1000n, rt.persistentHash(V, [new Uint8Array(bs), enc(5000)])],
       call: 'prove',
     },
+    // Same witness shape as midnight/eligibility.mjs and sdk-bridge eligibilityWitnesses.
+    // Constructor does not read them, but Compact still requires the functions at construct time.
+    // prove() uses holderSecret, expiry, and the mock-issuer Schnorr signature.
     eligibility: {
-      w: {},
+      w: {
+        holderSecret: (c) => [c.privateState, eligHolder],
+        expiry: (c) => [c.privateState, eligExpiry],
+        nonceX: (c) => [c.privateState, eligSig.nonceX],
+        nonceY: (c) => [c.privateState, eligSig.nonceY],
+        sigS: (c) => [c.privateState, eligSig.s],
+        releasePreimage: (c) => [c.privateState, new Uint8Array(32)],
+      },
       args: elig.eligibilityDeployArgs({
         issuer: { publicKey: { x: BigInt(eligSec.issuerPub.x), y: BigInt(eligSec.issuerPub.y) } },
         credentialType: eligSec.credentialType,
@@ -148,7 +205,7 @@ try {
         preimageCommit: Buffer.from(eligSec.preimageCommit, 'hex'),
         escrow: eligSec.escrow,
       }),
-      call: null, // deploy only; prove/reveal would need the holder witness and is not required for the address
+      call: 'prove',
     },
   };
 
@@ -164,12 +221,38 @@ try {
     return total;
   };
 
+  if (DRY_RUN) {
+    const sp = specs.eligibility;
+    const local = await elig.runEligibility({
+      issuer: { publicKey: { x: BigInt(eligSec.issuerPub.x), y: BigInt(eligSec.issuerPub.y) } },
+      credential: { CredentialType: eligSec.credentialType, Expiration: eligSec.expiry },
+      holderSecret: eligHolder,
+      expiry: eligExpiry,
+      signature: eligSig,
+      asOf: eligSec.asOf,
+      preimageCommit: Buffer.from(eligSec.preimageCommit, 'hex'),
+      escrow: eligSec.escrow,
+    });
+    log('dry-run local eligibility constructor+prove', JSON.stringify({ proven: local.ledger.proven === true, preimageRevealed: local.ledger.preimageRevealed === true }));
+    if (local.ledger.proven !== true) throw new Error('dry-run: local prove did not set proven=true');
+    log('dry-run ok');
+    process.exit(0);
+  }
+
+  const startSpent = spent();
+  log(`fees already recorded from earlier mainnet receipts: ${startSpent.toFixed(4)} DUST; cap this run ${MAX_TOTAL_DUST} DUST total`);
+
   for (const [name, sp] of Object.entries(specs)) {
+    if (ONLY_ELIGIBILITY && name !== 'eligibility') {
+      log('skipping (not requested this run)', name, out.deployments[name]?.contractAddress ?? '(none)');
+      continue;
+    }
     if (out.deployments[name]?.contractAddress && (sp.call == null || out.deployments[name]?.call?.txHash) && !process.argv.includes('--redeploy')) {
       log('already deployed', name, out.deployments[name].contractAddress);
       continue;
     }
-    if (spent() >= MAX_TOTAL_DUST) throw new Error(`Spent ${spent().toFixed(4)} DUST already, at or over the ${MAX_TOTAL_DUST} total cap; stopping.`);
+    const newSpent = spent() - startSpent;
+    if (newSpent >= MAX_TOTAL_DUST) throw new Error(`This run has spent ${newSpent.toFixed(4)} DUST already, at or over the ${MAX_TOTAL_DUST} cap; stopping.`);
     const existing = !process.argv.includes('--redeploy') && out.deployments[name]?.contractAddress;
     try {
       const m = await import(`./managed/${name}/contract/index.js`);
