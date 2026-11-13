@@ -15,9 +15,9 @@
   "nightBalance": "0",
   "nightUtxos": 0,
   "registeredUtxos": 0,
-  "dustBalanceSpeck": "116432510670000000",
-  "dustBalanceDust": 116.43251067,
-  "at": "2026-11-13T16:18:01.496Z"
+  "dustBalanceSpeck": "128065265016334769",
+  "dustBalanceDust": 128.06526501633476,
+  "at": "2026-11-13T18:07:53.982Z"
  },
  "deployments": {
   "condition": {
@@ -105,15 +105,39 @@
    }
   },
   "eligibility": {
-   "deployError": "ContractExecutionError: first (witnesses) argument to Contract constructor does not contain a function-valued field named holderSecret <- ContractRuntimeError: Failed to construct contract 'eligibility'; check the witnesses supplied by the contract configuration <- CompactError: first (witnesses) argument to Contract constructor does not contain a function-valued field named holderSecret",
-   "at": "2026-11-13T16:20:14.811Z"
+   "circuit": "deploy",
+   "txId": "0038a842eea4437f6eb8b8f506a39005e95f9e47971cf232c1551706aeda72c143",
+   "txHash": "d9656de6a0317ecbdeb7e09bf5c2d3123719daeee14957debc39f67b8b2ff7ab",
+   "blockHeight": 3444224,
+   "fees": {
+    "paidFees": "1120092278350212",
+    "estimatedFees": "1120092278350212"
+   },
+   "contractAddress": "8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3",
+   "txExplorer": "https://www.midnightexplorer.com/transactions/d9656de6a0317ecbdeb7e09bf5c2d3123719daeee14957debc39f67b8b2ff7ab",
+   "contractExplorer": "https://www.midnightexplorer.com/contracts/8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3",
+   "at": "2026-11-13T18:08:15.937Z",
+   "call": {
+    "circuit": "prove",
+    "contractAddress": "8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3",
+    "txId": "00bf1562ddd8db22d82ff40da9d14ada5967e0dc1ef4d35e14b0f59f0a05d14991",
+    "txHash": "222476605d263d66a7856888d1cc8dcba26315d5c7677c5b73cd248fbed0a776",
+    "blockHeight": 3444228,
+    "fees": {
+     "paidFees": "279209486587330",
+     "estimatedFees": "279209486587330"
+    },
+    "txExplorer": "https://www.midnightexplorer.com/transactions/222476605d263d66a7856888d1cc8dcba26315d5c7677c5b73cd248fbed0a776",
+    "contractExplorer": "https://www.midnightexplorer.com/contracts/8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3",
+    "at": "2026-11-13T18:08:38.067Z"
+   }
   }
  },
  "fees": {
-  "dustBefore": 116.43251067,
-  "paidFromReceiptsDust": 2.517273326572,
-  "successfulTransactions": 6,
-  "note": "paidFromReceiptsDust is the sum of on-chain paidFees for the six successful deploys and proof calls. eligibility was not submitted. Remaining wallet DUST is dustBefore minus this amount, plus generation during the run.",
-  "at": "2026-11-13T16:20:14.688Z"
+  "dustBefore": 128.06526501633476,
+  "dustAfter": 126.44616702503987,
+  "dustSpentApprox": 1.6190979912948933,
+  "paidFromReceipts": 3.916575091509639,
+  "at": "2026-11-13T18:08:38.069Z"
  }
 }
