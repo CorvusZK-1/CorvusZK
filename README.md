@@ -8,7 +8,7 @@ Non-custodial TypeScript SDK and Compact templates for **proof-gated XRPL escrow
 
 **Buyer brief:** see [WHAT-YOU-GET.md](WHAT-YOU-GET.md) for an honest included / not-included checklist.
 
-**For sale:** this project is available for acquisition. A private Agent Ledger add-on (AI agent permission proofs plus a kill switch) is available to buyers of the project as an optional bundle; it is not part of this public repository.
+**For sale (open to offers):** this project is available for acquisition. Asking price and inquiries: [CorvusZK on SideProjectors](https://www.sideprojectors.com/project/108662). A private Agent Ledger add-on (AI agent permission proofs plus a kill switch) is available to buyers of the project as an optional bundle; it is not part of this public repository.
 
 ## For Buildathon judges
 
