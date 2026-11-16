@@ -22,4 +22,37 @@ const B32 = new rt.CompactTypeBytes(32);
   try { await run(2012, 2012); res.age_under_2012 = 'UNEXPECTED PASS'; } catch (e) { res.age_under_2012 = 'rejected: ' + e.message.slice(0, 60); }
   try { await run(1990, 1985); res.age_wrongCommit = 'UNEXPECTED PASS'; } catch (e) { res.age_wrongCommit = 'rejected: ' + e.message.slice(0, 60); }
 }
+// balance_above
+{ const m = await import('./managed/balance_above/contract/index.js'); const salt = crypto.randomBytes(32);
+  const V = new rt.CompactTypeVector(2, B32);
+  const enc = (n) => { const b = Buffer.alloc(32); b.writeBigUInt64LE(BigInt(n)); return new Uint8Array(b); };
+  const run = async (bal, commitBal) => { const C = new m.Contract({ balance: c => [c.privateState, BigInt(bal)], salt: c => [c.privateState, salt] });
+    const st = await initialState(rt, C, 1000n, rt.persistentHash(V, [salt, enc(commitBal)])); return m.ledger((await runCircuit(rt, C, st, 'prove')).state).proven; };
+  try { res.balance_above_5000 = 'proven=' + await run(5000, 5000); } catch (e) { res.balance_above_5000 = 'ERR ' + e.message.slice(0, 80); }
+  try { await run(1000, 1000); res.balance_equal_1000 = 'UNEXPECTED PASS'; } catch (e) { res.balance_equal_1000 = 'rejected: ' + e.message.slice(0, 60); }
+  try { await run(999999, 10); res.balance_wrongCommit = 'UNEXPECTED PASS'; } catch (e) { res.balance_wrongCommit = 'rejected: ' + e.message.slice(0, 60); }
+}
+// eligibility (mock issuer, local compact-runtime only; no chain, no secrets printed)
+{ const elig = await import('./eligibility.mjs');
+  const issuer = elig.createMockIssuer();
+  const holderSecret = crypto.randomBytes(32);
+  const expiry = 1_900_000_000n;
+  const asOf = 1_700_000_000n;
+  const credential = elig.issueMockCredential(issuer, { holderSecret, credentialType: 'kyc-pass', expiry });
+  const bound = elig.createBoundPreimage();
+  const escrow = { owner: Buffer.alloc(20, 0x11), offerSequence: 17, destination: Buffer.alloc(20, 0x22) };
+  const args = { issuer, credential, holderSecret, asOf, preimageCommit: bound.preimageCommit, escrow };
+  try {
+    const proved = await elig.runEligibility(args);
+    res.eligibility_prove = 'proven=' + proved.ledger.proven + ',preimageRevealed=' + proved.ledger.preimageRevealed;
+  } catch (e) { res.eligibility_prove = 'ERR ' + e.message.slice(0, 80); }
+  try {
+    await elig.runEligibility({ ...args, only: 'reveal', reveal: true, releasePreimage: bound.preimage });
+    res.eligibility_revealBeforeProve = 'UNEXPECTED PASS';
+  } catch (e) { res.eligibility_revealBeforeProve = 'rejected: ' + e.message.slice(0, 60); }
+  try {
+    const revealed = await elig.runEligibility({ ...args, reveal: true, releasePreimage: bound.preimage });
+    res.eligibility_reveal = 'proven=' + revealed.ledger.proven + ',preimageRevealed=' + revealed.ledger.preimageRevealed;
+  } catch (e) { res.eligibility_reveal = 'ERR ' + e.message.slice(0, 80); }
+}
 console.log(JSON.stringify(res, null, 1));
