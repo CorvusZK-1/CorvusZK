@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Try CorvusZK: a proof-gated XRPL escrow, step by step</title>
-  <meta name="description" content="Walk through a real CorvusZK run on testnet: XRP locked in an XRPL escrow, a private eligibility proof on Midnight Preprod, then the escrow released. Every step links to the public block explorer. Nothing to install." />
+  <meta name="description" content="Walk through a real CorvusZK run: XRP locked in an XRPL testnet escrow, a private eligibility proof on Midnight Preprod, then the escrow released. Every step links to the public block explorer. The four Compact contracts are also live on Midnight mainnet (unaudited, not for real value). Nothing to install." />
   <meta name="theme-color" content="#0b1220" />
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="demo.css" />
@@ -45,8 +45,11 @@
         <strong>What you are looking at.</strong>
         This is a replay of a live run recorded on <b>12 Nov 2026 at 2:55 AM PT</b> (88 seconds end to end).
         Your browser does not create new transactions; the receipts are real and on public testnets.
-        Testnet only: test XRP and test DUST have no value. The credential issuer in this run is a
-        <b>MOCK</b> issuer for demonstration, not a real KYC provider.
+        This replay uses Midnight Preprod and XRPL testnet: test XRP and test DUST have no value.
+        The credential issuer in this run is a <b>MOCK</b> issuer for demonstration, not a real KYC provider.
+        The four Compact contracts are also live on Midnight mainnet (unaudited, not for real value);
+        the mainnet eligibility instance is a demonstration only, and the full prove → reveal →
+        EscrowFinish path has been proven on Preprod + XRPL testnet only.
       </div>
     </section>
 
@@ -113,8 +116,11 @@
       <p class="muted small">
         Honest limits: XRPL does not check the Midnight proof by itself. The escrow's release key is revealed on
         Midnight only after the proof succeeds, and the party who created that key (here, the destination) is trusted
-        not to release early. The payer cannot. This is a developer toolkit on testnet: unaudited, not on mainnet, no
-        customers yet. Details are in the <a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/docs/security-model.md" target="_blank" rel="noopener">security model</a>.
+        not to release early. The payer cannot. Unaudited. Not for real value. No customers yet.
+        This walkthrough is a Preprod + XRPL testnet replay; the four Compact contracts are also live
+        on Midnight mainnet, where eligibility is a demonstration instance with a mock issuer.
+        The full prove → reveal → EscrowFinish path has been proven on Preprod + XRPL testnet only.
+        Details are in the <a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/docs/security-model.md" target="_blank" rel="noopener">security model</a>.
       </p>
     </section>
 

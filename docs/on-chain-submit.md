@@ -2,7 +2,7 @@
 
 How a staff engineer posts a **new** proof transaction (`callTx`: `attest` or `prove`) from the CorvusZK SDK.
 
-**Testnet only.** Requires your own Blockfrost Preprod project, a local proof server, and a funded Preprod wallet with DUST. The SDK never stores seeds or fulfillments. `submitOnChain` covers `condition`, `age_over`, and `balance_above`. `eligibility` uses `deployEligibility`, `callEligibility`, and `readEligibilityState`. The full XRPL-plus-Preprod script is [live-eligibility.md](live-eligibility.md).
+**This path is Midnight Preprod only.** All four Compact contracts are also live on Midnight mainnet (see the README deployed-contracts table), but `submitOnChain` does not post to mainnet. Requires your own Blockfrost Preprod project, a local proof server, and a funded Preprod wallet with DUST. The SDK never stores seeds or fulfillments. `submitOnChain` covers `condition`, `age_over`, and `balance_above`. `eligibility` uses `deployEligibility`, `callEligibility`, and `readEligibilityState`. The full XRPL-plus-Preprod script is [live-eligibility.md](live-eligibility.md).
 
 ## What this does / does not do
 
@@ -11,7 +11,7 @@ How a staff engineer posts a **new** proof transaction (`callTx`: `attest` or `p
 | `findDeployedContract` + `callTx` against an address in `midnight/deployments.preprod.json` | Redeploy the three templates |
 | Fail fast if the wallet is not synced within `MN_SYNC_TIMEOUT_MS` (default 90s) | Multi-hour DUST wait / `ensure-pipeline.sh` |
 | Fail fast if DUST is 0 or the proof server is down | Print seeds, Blockfrost ids, or contract secrets |
-| Return public `txId` / `txHash` / `blockHeight` | Touch mainnet |
+| Return public `txId` / `txHash` / `blockHeight` | Touch Midnight mainnet or XRPL mainnet |
 
 ## Configure (env names only)
 

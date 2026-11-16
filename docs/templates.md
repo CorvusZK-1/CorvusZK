@@ -1,6 +1,6 @@
-# The three proof templates, in plain words
+# The four Compact contracts, in plain words
 
-Each template is a small Midnight smart contract written in Compact (`contracts/*.compact`).
+Each contract is a small Midnight smart contract written in Compact 0.36.0 (`contracts/*.compact`).
 The pattern is always the same:
 
 1. **Set up (public):** someone deploys the contract with a public rule (for example "18 or older as of 2026") and a *commitment*, a fingerprint of the private fact made with a random salt. The fingerprint reveals nothing by itself.
@@ -29,7 +29,7 @@ Use it to gate a payment on a private yes/no from a named attester (a courier, a
 - Use: proof of funds for a deal, allow-lists, credit-style checks, without showing the real number.
 
 ## eligibility — mock issuer, one escrow
-`contracts/eligibility.compact` is separate from the three templates above. A labeled in-process issuer signs a commitment to a holder secret with Schnorr on Compact's embedded curve (toolchain 0.31.1, 96-bit scalars). The circuit checks that signature and `expiry >= asOf`, then records one use. The public nullifier is bound to the holder secret, credential type, XRPL owner, offer sequence, destination, and the preimage commitment. `reveal()` writes the XRPL preimage only after `prove()` has succeeded once.
+`contracts/eligibility.compact` is separate from the three templates above. A labeled in-process issuer signs a commitment to a holder secret with Schnorr on Compact's embedded curve (written for toolchain 0.31.1, now compiled with Compact 0.36.0; 96-bit demo scalars). The circuit checks that signature and `expiry >= asOf`, then records one use. The public nullifier is bound to the holder secret, credential type, XRPL owner, offer sequence, destination, and the preimage commitment. `reveal()` writes the XRPL preimage only after `prove()` has succeeded once.
 
 This is not an XRPL CredentialCreate, not Ed25519, and not a regulated KYC check. The holder secret and subject commitment are not ledger fields. The nullifier is public and links the same inputs if they are reused on a fresh contract. A fresh contract starts unused. There is no global nullifier set.
 
@@ -37,7 +37,7 @@ This is not an XRPL CredentialCreate, not Ed25519, and not a regulated KYC check
 - A commitment only proves the number is the one *committed to*. `age_over` and `balance_above` still do not check an issuer signature. `eligibility` checks a mock issuer signature over a subject commitment. A bank, exchange, or ID issuer is not integrated.
 - `asOfYear` is set at deploy time, not read from a clock.
 - The JS `LocalSimulationBackend` uses SHA-256 commitments; the Compact templates use `persistentHash`. They are not interchangeable yet.
-- Testnet (Preprod) only. Not audited.
+- The four contracts are live on Midnight mainnet (13 Nov 2026) and on Midnight Preprod. Unaudited. Not for real value. The full prove → reveal → XRPL EscrowFinish path has been proven on Preprod + XRPL testnet only. The mainnet `eligibility` instance is a demonstration only (mock issuer, no real XRPL escrow, no `reveal`).
 
 ## Try them with no chain and no money
 ```bash

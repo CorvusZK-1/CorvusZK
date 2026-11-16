@@ -15,7 +15,7 @@ This command is for a machine you control. It is not run by the unit tests.
 
 ## Prerequisites
 
-1. Node 20+.
+1. Node 22.18+ (Node 24 in CI). The SDK alone can run on Node 20+.
 2. From the repo root: `npm ci`. From `midnight/`: `npm ci`.
 3. A local proof server on port 6300:
 

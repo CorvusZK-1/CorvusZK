@@ -19,7 +19,7 @@ See `.gitignore`. If a secret is ever committed, rotate it immediately.
 
 ## Honest limits
 
-- This release is **testnet / Midnight Preprod only**. Not audited. Not mainnet-ready.
+- The four Compact contracts are live on **Midnight mainnet** (13 Nov 2026). Unaudited. Not for real value. The full eligibility + XRPL escrow release path (prove, reveal, and EscrowFinish) has been proven on Midnight Preprod + XRPL testnet only. The mainnet `eligibility` instance is a demonstration only (mock issuer, no real XRPL escrow, no `reveal`).
 - `LocalSimulationBackend` is **not** zero-knowledge; it is a signed local attestation for development.
 - Compact `persistentHash` commitments and simulation SHA-256 commitments are not interchangeable.
 - `contracts/eligibility.compact` checks a **mock** in-process Schnorr credential and records a one-time nullifier bound to escrow owner, offer sequence, destination, and preimage commitment. It is not a regulated KYC credential, and not an XRPL Credential (XLS-70) ledger object. A fresh instance is deployed per escrow on Preprod by `npm run live:eligibility` (last run 12 Nov 2026). See the README security model.
@@ -29,4 +29,4 @@ See `.gitignore`. If a secret is ever committed, rotate it immediately.
 
 ## Reporting
 
-If you find a vulnerability in CorvusZK, email the maintainer privately before public disclosure. Do not open a public issue that includes secrets or exploit payloads against live wallets.
+If you find a vulnerability in CorvusZK, report it privately through this repository's [Security Advisories](https://github.com/CorvusZK-1/CorvusZK/security/advisories/new) (Security → Report a vulnerability). Do not open a public issue that includes secrets or exploit payloads against live wallets.
