@@ -1,12 +1,14 @@
 # Getting started with CorvusZK
 
-Five-minute path for a TypeScript developer who wants **proof-gated XRPL escrow** without touching mainnet money.
+Five-minute path for a TypeScript developer who wants **proof-gated XRPL escrow** without touching mainnet money. Node 22.18+ is required for the local Compact circuits and tests (Node 24 in CI). The SDK alone can run on Node 20+.
 
 ## What this is
 
 CorvusZK is a **developer toolkit**, not a bank product and not a custodial wallet. Your app (or your user’s wallet) creates a normal XRPL crypto-condition escrow. CorvusZK proves a private claim on Midnight (age over N, balance above X, or a condition met), then your app finishes the escrow only if that proof verifies.
 
 Funds never sit with CorvusZK. Secrets and fulfillments stay with the caller.
+
+All four Compact contracts are live on Midnight mainnet (13 Nov 2026). Unaudited. Not for real value. The full eligibility prove → reveal → XRPL EscrowFinish path has been proven on Midnight Preprod + XRPL testnet only. Addresses and explorer links are in the [README deployed-contracts table](../README.md#deployed-contracts).
 
 ## Pick a backend
 
@@ -67,6 +69,6 @@ See [on-chain-submit.md](on-chain-submit.md) and [proof-server.md](proof-server.
 
 ## Next docs
 
-- [templates.md](templates.md) — the three Compact claims in plain words  
+- [templates.md](templates.md) — the four Compact contracts in plain words  
 - [xrpl-escrow-flow.md](xrpl-escrow-flow.md) — lock → prove → release  
 - [../WHAT-YOU-GET.md](../WHAT-YOU-GET.md) — honest included / not-included list  

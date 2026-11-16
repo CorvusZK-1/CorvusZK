@@ -1,9 +1,10 @@
 # Changelog
 
-All dates are Pacific time. Testnet only throughout.
+All dates are Pacific time. Unaudited. Not for real value. The full eligibility + XRPL escrow release path has been proven on Midnight Preprod + XRPL testnet only.
 
 ## Unreleased — Midnight Buildathon Wave 3 (Nov 2026)
 
+- **13 Nov:** All four Compact contracts deployed on Midnight mainnet, each with one proof or attest call. The mainnet `eligibility` instance is a demonstration only (mock issuer, placeholder XRPL accounts, no real escrow, no `reveal`). Addresses and explorer links are in the README and in [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json). Unaudited. Not for real value.
 - **12 Nov:** GitHub Actions CI: installs Compact 0.36.0, compiles all four contracts and checks the committed `midnight/managed/` artifacts match, builds the SDK, type-checks witnesses, runs the offline tests and local circuit runs; live XRPL testnet test as a best-effort job.
 - **12 Nov:** Contract simulator tests (`test/templates.test.mjs`) for `condition`, `age_over`, `balance_above` (pass and refuse cases) and eligibility `prove`/`reveal` through typed witnesses.
 - **12 Nov:** `midnight/witnesses.ts`: typed witness implementations for all four contracts.

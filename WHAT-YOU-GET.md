@@ -1,16 +1,17 @@
 # What's included (CorvusZK)
 
-Honest inventory of this toolkit as of **11 Nov 2026** (ledger 9 code upgrade; v1.0.1 packaging was 5 Nov 2026). Testnet only. Apache-2.0. Not affiliated with Ripple, the XRPL Foundation, or the Midnight Foundation.
+Honest inventory of this toolkit as of **13 Nov 2026** (four Compact contracts live on Midnight mainnet; ledger 9 code upgrade was 11 Nov 2026; v1.0.1 packaging was 5 Nov 2026). Unaudited. Not for real value. The full eligibility + XRPL escrow release path has been proven on Midnight Preprod + XRPL testnet only. Apache-2.0. Not affiliated with Ripple, the XRPL Foundation, or the Midnight Foundation.
 
 ## Included
 
 | Item | Notes |
 |---|---|
 | TypeScript SDK (`src/`, builds to `dist/`) | Non-custodial. Never holds funds, keys, or fulfillments. |
-| Three Compact templates | `condition`, `balance_above`, `age_over` under `contracts/` |
+| Four Compact contracts | `condition`, `balance_above`, `age_over`, and `eligibility` under `contracts/` |
 | Eligibility template | `contracts/eligibility.compact`: mock Schnorr issuer, one-time nullifier bound to XRPL owner, offer sequence, destination, and preimage commitment. Run live on Preprod ledger 9 with an XRPL testnet escrow release on 12 Nov 2026 ([receipts/ledger9-preprod-2026-11-12.md](receipts/ledger9-preprod-2026-11-12.md)); first live run on ledger 8, 6 Nov 2026 ([docs/live-run.md](docs/live-run.md)). |
 | Compiled circuit artifacts | `midnight/managed/` (needed for `npm run simulate` and `MidnightBackend`) |
-| Live Midnight Preprod contracts (ledger 9, deployed 11 Nov 2026) | Addresses and tx hashes in `midnight/deployments.preprod.json` and the links below; ledger 8 history (3 Nov) under `ledger8History` |
+| Live Midnight Preprod contracts (ledger 9, deployed 11–12 Nov 2026) | Addresses and tx hashes in `midnight/deployments.preprod.json` and the links below; ledger 8 history (3 Nov) under `ledger8History` |
+| Live Midnight **mainnet** contracts (13 Nov 2026) | All four contracts. Addresses and proof transactions in `midnight/deployments.mainnet.json` and the README deployed-contracts table. Unaudited. Not for real value. The mainnet `eligibility` instance is a demonstration only (mock issuer, no real XRPL escrow, no `reveal`). |
 | **On-chain submit from the SDK** | `MidnightBackend.submitOnChain` → `midnight/sdk-bridge.mjs` `submitCallTx` (bounded wallet sync; no redeploy) |
 | XRPL escrow helpers | Create crypto-condition escrow; finish only after a proof verifies |
 | Docs | `docs/getting-started.md`, `docs/templates.md`, `docs/xrpl-escrow-flow.md`, `docs/on-chain-submit.md`, `docs/proof-server.md`, `SECURITY.md`, this file, `README.md` |
@@ -22,6 +23,8 @@ Honest inventory of this toolkit as of **11 Nov 2026** (ledger 9 code upgrade; v
 ### Ledger 9 status
 
 **Live on Midnight Preprod ledger 9 since 11 Nov 2026 (about 6:47–6:55 PM PT).** Code upgraded the same day to Wallet SDK 2.0.0, Midnight.js 5.0.0, Compact 0.36.0 and proof server 9.0.0. The throwaway test wallet's free test NIGHT was re-registered for DUST, the three templates were redeployed, and one ZK proof call was submitted to each; the Preprod indexer reports all three calls as SUCCESS. On **12 Nov 2026** (2:55 AM PT) the eligibility template and the XRPL escrow release were also run live on ledger 9 ([receipts](receipts/ledger9-preprod-2026-11-12.md)). The older ledger 8 records (3–6 Nov 2026) are kept under `ledger8History` in `midnight/deployments.preprod.json`.
+
+**Live on Midnight mainnet since 13 Nov 2026.** All four contracts have a mainnet address and at least one proof or attest call. Unaudited. Not for real value. The mainnet `eligibility` instance did not run `reveal` and is not bound to a real XRPL escrow. Addresses: [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json) and the README deployed-contracts table.
 
 - `condition` contract: https://preprod.midnightexplorer.com/contracts/b6f78efb34e84b8809267764f0f62eaab5f375c845cc57a64a63b700dde04df3
   - deploy tx: https://preprod.midnightexplorer.com/transactions/1c24472691745fea4b864140613a44be6f588fcda8ab6d1f20e6ae73873f437c
@@ -43,7 +46,7 @@ Honest inventory of this toolkit as of **11 Nov 2026** (ledger 9 code upgrade; v
 
 | Item | Status |
 |---|---|
-| Midnight **mainnet** | Not shipped. This release is Preprod / XRPL testnet only. |
+| Midnight **mainnet** SDK `submitOnChain` | Not shipped. Contracts are deployed on mainnet (see above); the SDK `submitOnChain` path is Preprod only. Unaudited. Not for real value. |
 | Hosted proof relay / monitoring SaaS | Not built. Self-host the proof server (see `docs/proof-server.md`). |
 | Registered domain | **corvuszk.com** registered (Porkbun, paid through 5 Nov 2027). Trademark not filed. |
 | Wallet seeds, Blockfrost project IDs, or other secrets | Never ship in this package. Set `BLOCKFROST_MIDNIGHT_PREPROD` yourself. |
@@ -58,7 +61,7 @@ Honest inventory of this toolkit as of **11 Nov 2026** (ledger 9 code upgrade; v
 
 ## Try it in 5 minutes (no money)
 
-Requires Node 20+.
+Requires Node 22.18+ for the local Compact circuits and tests (Node 24 in CI). The SDK alone can run on Node 20+.
 
 ```bash
 npm install && npm run build

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CorvusZK — Proof-gated XRPL escrow for developers</title>
-  <meta name="description" content="Non-custodial TypeScript SDK and Compact templates for privacy proofs that gate native XRPL escrows on Midnight + XRP Ledger. Developer toolkit. Testnet first." />
+  <meta name="description" content="Non-custodial TypeScript SDK and four Compact contracts for privacy proofs that gate native XRPL escrows on Midnight + XRP Ledger. Contracts are live on Midnight mainnet (unaudited, not for real value). The full escrow-release path is proven on Preprod + XRPL testnet." />
   <meta name="theme-color" content="#0b1220" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1220'/%3E%3Cpath d='M18 40c6-14 22-22 28-10-8 2-14 8-18 18-4-4-8-6-10-8z' fill='%23c4a574'/%3E%3Ccircle cx='40' cy='22' r='3' fill='%23e8eef8'/%3E%3C/svg%3E" />
@@ -32,16 +32,16 @@
       <p class="eyebrow">Midnight + XRP Ledger · Developer toolkit</p>
       <h1>Prove a private fact.<br />Then release the escrow.</h1>
       <p class="lede">
-        CorvusZK is a non-custodial TypeScript SDK and Compact templates for
+        CorvusZK is a non-custodial TypeScript SDK and four Compact contracts for
         <strong>proof-gated XRPL escrows</strong> — age over N, balance above X,
-        or “condition met” — without holding anyone’s funds or keys.
+        “condition met,” or a one-time eligibility check — without holding anyone’s funds or keys.
       </p>
       <div class="cta-row">
         <a class="btn primary" href="#start">Try offline in 5 minutes</a>
         <a class="btn ghost" href="demo/">Try it in your browser</a>
         <a class="btn ghost" href="#get">See what’s included</a>
       </div>
-      <p class="fine">Testnet / Midnight Preprod (ledger 9, live since 11 Nov 2026) in this release. Not a bank. Not custodial. Not audited for mainnet.</p>
+      <p class="fine">Four Compact contracts are live on Midnight mainnet (13 Nov 2026). Unaudited. Not for real value. The full eligibility + XRPL escrow release path has been proven on Midnight Preprod + XRPL testnet. Not a bank. Not custodial.</p>
       <figure class="demo-video">
         <video controls playsinline preload="metadata" poster="media/corvuszk-demo-poster.jpg" width="1920" height="1080">
           <source src="media/corvuszk-demo.mp4" type="video/mp4" />
@@ -59,8 +59,8 @@
         <li><strong>Release</strong> — your app finishes the escrow only after the proof verifies.</li>
       </ol>
       <p>
-        Three claim templates ship today (<code>condition</code>, <code>age_over</code>, <code>balance_above</code>),
-        plus an <code>eligibility</code> contract that binds a one-time credential check to one XRPL escrow.
+        Four Compact contracts ship today: <code>condition</code>, <code>age_over</code>, <code>balance_above</code>,
+        and an <code>eligibility</code> contract that binds a one-time credential check to one XRPL escrow.
         Simulation mode teaches the API offline; Midnight mode runs the real compiled circuits.
       </p>
     </section>
@@ -88,8 +88,8 @@
           <h3>Included</h3>
           <ul class="bullets">
             <li>TypeScript SDK (<code>prove*</code>, escrow helpers, two backends)</li>
-            <li>Three Compact templates + managed circuit artifacts</li>
-            <li>Live Preprod contract addresses + on-chain <code>submitOnChain</code></li>
+            <li>Four Compact contracts + managed circuit artifacts</li>
+            <li>Live Midnight mainnet and Preprod addresses; Preprod on-chain <code>submitOnChain</code></li>
             <li>Offline demo, optional XRPL testnet demo, docs</li>
             <li>Apache-2.0 license</li>
           </ul>
@@ -97,7 +97,6 @@
         <div>
           <h3>Not included (yet)</h3>
           <ul class="bullets">
-            <li>Midnight mainnet support</li>
             <li>Hosted proof relay / SaaS monitoring</li>
             <li>Custodial wallets or fund movement</li>
             <li>Issuer-signed real age/balance credentials</li>
@@ -107,7 +106,20 @@
     </section>
 
     <section id="live" class="wrap panel alt">
-      <h2>Live on Midnight Preprod ledger 9</h2>
+      <h2>Live on Midnight</h2>
+      <h3>Midnight mainnet (13 Nov 2026)</h3>
+      <p>
+        All four Compact contracts are live on Midnight mainnet. Unaudited. Not for real value.
+        The mainnet <code>eligibility</code> contract is a demonstration instance: mock issuer, placeholder XRPL
+        accounts, no real escrow, and no <code>reveal</code> call.
+      </p>
+      <ul class="bullets">
+        <li><code>condition</code> — <a href="https://www.midnightexplorer.com/contracts/18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a">contract</a> · <a href="https://www.midnightexplorer.com/transactions/53d53013bad4e36eda2531177ada92fb925b8cb86732b0de1d85def75ab633c4"><code>attest</code></a></li>
+        <li><code>age_over</code> — <a href="https://www.midnightexplorer.com/contracts/7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc">contract</a> · <a href="https://www.midnightexplorer.com/transactions/83228532a1386132a1a8c8ea532b1f38d4283dd6d2ea4b437fdbf0da066e0bc0"><code>prove</code></a></li>
+        <li><code>balance_above</code> — <a href="https://www.midnightexplorer.com/contracts/8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0">contract</a> · <a href="https://www.midnightexplorer.com/transactions/44e9e0c63348d309d68d8edac164a0f9b744326ccd4e42e49c887df6585c790f"><code>prove</code></a></li>
+        <li><code>eligibility</code> (demonstration instance) — <a href="https://www.midnightexplorer.com/contracts/8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3">contract</a> · <a href="https://www.midnightexplorer.com/transactions/222476605d263d66a7856888d1cc8dcba26315d5c7677c5b73cd248fbed0a776"><code>prove</code></a></li>
+      </ul>
+      <h3>Midnight Preprod + XRPL testnet (the full escrow-release path)</h3>
       <p>
         Midnight upgraded its Preprod test network to ledger 9 on 9 Nov 2026. On <strong>11 Nov 2026</strong>,
         CorvusZK was updated to the new Midnight software (Compact 0.36.0, Midnight.js 5.0.0, Wallet SDK 2.0.0,
@@ -132,7 +144,8 @@
         <li><a href="https://github.com/CorvusZK-1/CorvusZK/blob/main/receipts/ledger9-preprod-2026-11-12.md">All 12 Nov receipts</a></li>
       </ul>
       <p class="fine">
-        Test network only, using free test tokens. Not on mainnet yet. Unaudited. The eligibility issuer is a labeled mock,
+        Unaudited. Not for real value. The full prove → reveal → XRPL <code>EscrowFinish</code> path has been proven
+        on Midnight Preprod + XRPL testnet only, using free test tokens. The eligibility issuer is a labeled mock,
         and XRPL does not verify the Midnight proof itself (see the README security model).
       </p>
     </section>
@@ -146,7 +159,7 @@ npm run example:offline</code></pre>
         Source code (Apache-2.0):
         <a href="https://github.com/CorvusZK-1/CorvusZK">github.com/CorvusZK-1/CorvusZK</a>.
       </p>
-      <p class="fine">Requires Node 20+. Blockfrost Preprod tokens stay in your env — never commit them.</p>
+      <p class="fine">Requires Node 22.18+ for the local Compact circuits and tests (Node 24 in CI). The SDK alone can run on Node 20+. Blockfrost tokens stay in your env — never commit them.</p>
     </section>
   </main>
 
