@@ -52,7 +52,7 @@ export async function main() {
     log('funding XRPL testnet payer and destination from the public faucet');
     const { wallet: payer } = await client.fundWallet(null, { faucetHost: 'faucet.altnet.rippletest.net' });
     const { wallet: destination } = await client.fundWallet(null, { faucetHost: 'faucet.altnet.rippletest.net' });
-    const created = await dist.createEscrow(client, payer, { destination: destination.address, amountXrp: process.env.XRPL_ESCROW_XRP ?? '20', condition: terms.condition, cancelAfterSec: Number(process.env.XRPL_CANCEL_AFTER_SEC ?? 7200) });
+    const created = await dist.createEscrow(client, payer, { destination: destination.address, amountXrp: process.env.XRPL_ESCROW_XRP ?? '20', condition: terms.condition, cancelAfterSec: Number(process.env.XRPL_CANCEL_AFTER_SEC ?? 50400) });
     if (created.result !== 'tesSUCCESS') throw new Error('EscrowCreate ' + created.result);
     log('escrow created', created.hash);
     const node = (await client.request({ command: 'ledger_entry', escrow: { owner: payer.address, seq: created.offerSequence }, ledger_index: 'validated' })).result.node;
@@ -66,7 +66,7 @@ export async function main() {
       policyId: 'corvuszk-preprod-v3-run', policyVersion: 1,
       issuerX: issuer.publicKey.x.toString(16), issuerY: issuer.publicKey.y.toString(16),
       credentialType: 'kyc-pass', asOf: asOf.toString(),
-      intentId: 'intent-' + crypto.randomUUID(), issuedAt: nowSec(), expiresAt: nowSec() + 6 * 3600,
+      intentId: 'intent-' + crypto.randomUUID(), issuedAt: nowSec(), expiresAt: nowSec() + Number(process.env.INTENT_TTL_SEC ?? 43200),
     };
     const intentHash = dist.intentHashV2(intent);
     registry.registerIntent(intent.intentId, intentHash);
