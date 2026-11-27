@@ -1,0 +1,79 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.36.0",
+  "compiler-commit": "b5d9e4dfc532fe47011c4f6296e254f4853eb469",
+  "language-version": "0.28.0",
+  "runtime-version": "0.21.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 5148,
+      "hash": "81d41a8dacbeba363449f7cbfa2bd184ebf4e1efab63c38c5674a5b95251c7e9"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 3497,
+      "hash": "56d8688e04cdaf2460d2b50013115f6ddad058a991e2153c54e114376b1acc32"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 112629,
+      "hash": "b5bd450256d4e588013b900865f6b1850d3190313ef3aa59034427f31c4b5e7b"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 3897,
+      "hash": "64fae67247dd33ab47184977bd4b472c506111450d16629bf67d1f93ba724254"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "prove.bzkir": {
+      "type": "file",
+      "size": 3908,
+      "hash": "0546242e446c3e701e52aa8266aa439397d65a36a9cf8f25c002f9608c4f3f44"
+    },
+    "prove.zkir": {
+      "type": "file",
+      "size": 13814,
+      "hash": "839d4a26c3b82825586b561b62ce13c2147db1728a0c5a3e5436f5d8c6c8a265"
+    },
+    "reveal.bzkir": {
+      "type": "file",
+      "size": 738,
+      "hash": "8d11cf2d6e43eb97ec05c133566a74f293254ad3bcb1a78da478df6cac66e59f"
+    },
+    "reveal.zkir": {
+      "type": "file",
+      "size": 2824,
+      "hash": "a89268a17a4e4c86528b6cc5da97feaf0451e90877c62c13494dd2d21c08bfb9"
+    }
+  },
+  "keys": {
+    "type": "directory",
+    "prove.prover": {
+      "type": "file",
+      "size": 49291748,
+      "hash": "e9586452de156d42385ceb7b7a3d86e0be46ad4cb82efbf64bfa8b94cd4c41fc"
+    },
+    "prove.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "b87e89ff4dca504d530d22df832e8544dd60cce1d2c5c2d3674017971f71f3fd"
+    },
+    "reveal.prover": {
+      "type": "file",
+      "size": 11277298,
+      "hash": "99403a9c8b68f64a6d9559f49d2fe64fed374a68f2f81e79c3a1d607ae9346f5"
+    },
+    "reveal.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "d5cc03713db1d6785da4edfaec642a370053ed4e8c58bb03f331fd9f1c02e1c2"
+    }
+  }
+}

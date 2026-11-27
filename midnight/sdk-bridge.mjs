@@ -197,6 +197,7 @@ const STRICT_CIRCUITS = {
   balance_above: ['prove'],
   eligibility: ['prove', 'reveal'],
   eligibility_v2: ['prove', 'reveal'],
+  eligibility_v3: ['prove', 'reveal'],
 };
 
 /** Ledger object -> plain JSON values (bigint -> decimal string, bytes -> hex). */

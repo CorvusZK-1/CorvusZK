@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile all five Compact contracts in place with the pinned compiler.
+# Compile all six Compact contracts in place with the pinned compiler.
 # Usage: scripts/compile-contracts.sh            (full compile, with proving keys)
 #        scripts/compile-contracts.sh --check    (compile, then fail if the committed
 #                                                  artifacts in midnight/managed differ)
@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 COMPACT_VERSION="${COMPACT_VERSION:-0.36.0}"
-for c in condition age_over balance_above eligibility eligibility_v2; do
+for c in condition age_over balance_above eligibility eligibility_v2 eligibility_v3; do
   echo "== compact compile contracts/$c.compact (compiler $COMPACT_VERSION)"
   compact compile "+$COMPACT_VERSION" "contracts/$c.compact" "midnight/managed/$c"
 done

@@ -4,6 +4,7 @@ All dates are Pacific time. Unaudited. Not for real value. The full eligibility 
 
 ## Unreleased — Midnight Buildathon Wave 3 (Nov 2026)
 
+- **27 Nov (draft, not reviewed, not deployed):** `eligibility_v3` replaces the demo credential signature with the Compact standard library's JubJub Schnorr verifier and compact-runtime's signer (CZ-005). Plan: [docs/cz-005-issuer-replacement.md](docs/cz-005-issuer-replacement.md).
 - **27 Nov:** End-to-end payment lifecycle tests (`test/lifecycle/`, `npm run test:lifecycle`, also part of `test:offline` and CI): create, fund, prove, release, refund and timeout paths. They use the real SDK, the compiled `eligibility_v2` circuit and real XRPL crypto-conditions against an in-memory XRPL ledger and a local Midnight read. No network and no real funds.
 - **26 Nov:** [Security notice](SECURITY-NOTICE.md): the demo eligibility issuer's signature is not secure (a holder of one credential can recover the issuer key). The eligibility contract already deployed on Midnight mainnet (13 Nov 2026) uses that issuer and must not be used with real value. There is no known real-value use.
 - **26 Nov:** P0 hardening for test networks: trusted policy party release mode, explicit evidence kinds (local runs no longer claim a zero-knowledge proof), signed claims, strict verification, intent binding, one credential per escrow, and a payer-side default preimage holder. The SDK refuses mainnet release while the demo issuer is in use.

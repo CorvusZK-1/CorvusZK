@@ -1,0 +1,129 @@
+pragma language_version >= 0.16;
+import CompactStandardLibrary;
+
+// eligibility_v3: same gate as eligibility_v2 (one approved settlement intent, intentHash and
+// credentialNullifier bindings), with the hand-rolled demo signature replaced (CZ-005, ADR-004).
+//
+// The issuer signature is checked with the Compact standard library's jubjubSchnorrVerify
+// (Schnorr over the embedded JubJub curve; challenge = Poseidon(R, pk, msg); identity key rejected).
+// Credentials are signed off-chain with the matching jubjubSchnorrSign from
+// @midnight-ntwrk/compact-runtime. No custom cryptography: this contract only builds the message.
+//
+// Message: one Field, degradeToTransient(persistentHash(domain, credentialType, subjectCommit, expiry)),
+// exported as the pure circuit credentialMessage so the issuer signs exactly what the circuit checks.
+//
+// Status: NOT reviewed. Test networks only until an outside review (ADR-004 rollout step 4).
+// v1 and v2 stay for the recorded demo and are labelled insecure.
+// XRPL still does not verify this proof (CZ-004, ADR-001): trusted policy party release.
+
+export ledger issuerX: Field;
+export ledger issuerY: Field;
+export ledger credentialType: Bytes<32>;
+export ledger asOf: Uint<64>;
+export ledger preimageCommit: Bytes<32>;
+export ledger escrowOwner: Bytes<32>;
+export ledger offerSequence: Uint<32>;
+export ledger escrowDestination: Bytes<32>;
+export ledger proven: Boolean;
+export ledger nullifier: Bytes<32>;
+export ledger preimageRevealed: Boolean;
+export ledger revealedPreimage: Bytes<32>;
+export ledger intentHash: Bytes<32>;
+export ledger credentialNullifier: Bytes<32>;
+
+witness holderSecret(): Bytes<32>;
+witness expiry(): Uint<64>;
+witness signature(): JubjubSchnorrSignature;
+witness releasePreimage(): Bytes<32>;
+
+constructor(
+  ix: Field,
+  iy: Field,
+  ctype: Bytes<32>,
+  asOf_: Uint<64>,
+  pCommit: Bytes<32>,
+  owner: Bytes<32>,
+  seq: Uint<32>,
+  dest: Bytes<32>,
+  iHash: Bytes<32>
+) {
+  issuerX = disclose(ix);
+  issuerY = disclose(iy);
+  credentialType = disclose(ctype);
+  asOf = disclose(asOf_);
+  preimageCommit = disclose(pCommit);
+  escrowOwner = disclose(owner);
+  offerSequence = disclose(seq);
+  escrowDestination = disclose(dest);
+  proven = false;
+  nullifier = pad(32, "");
+  preimageRevealed = false;
+  revealedPreimage = pad(32, "");
+  intentHash = disclose(iHash);
+  credentialNullifier = pad(32, "");
+}
+
+export pure circuit subjectCommit(secret: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "corvuszk:subject:v1"), secret]);
+}
+
+export pure circuit credentialMessage(ctype: Bytes<32>, sub: Bytes<32>, exp: Uint<64>): Vector<1, Field> {
+  return [degradeToTransient(persistentHash<Vector<4, Bytes<32>>>([
+    pad(32, "corvuszk:elig:v3"),
+    ctype,
+    sub,
+    exp as Field as Bytes<32>
+  ]))];
+}
+
+circuit escrowNullifier(secret: Bytes<32>): Bytes<32> {
+  // Account ids are 32 bytes: 20-byte XRPL account id, then 12 zero bytes.
+  // Sequence is little-endian in the first bytes of a 32-byte field encoding.
+  return persistentHash<Vector<8, Bytes<32>>>([
+    pad(32, "corvuszk:escrow-null:v2"),
+    secret,
+    credentialType,
+    escrowOwner,
+    offerSequence as Field as Bytes<32>,
+    escrowDestination,
+    preimageCommit,
+    intentHash
+  ]);
+}
+
+circuit credNullifier(secret: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<5, Bytes<32>>>([
+    pad(32, "corvuszk:cred-null:v2"),
+    secret,
+    credentialType,
+    issuerX as Bytes<32>,
+    issuerY as Bytes<32>
+  ]);
+}
+
+export circuit prove(): [] {
+  assert(!proven, "already proven");
+  assert(escrowOwner != pad(32, ""), "escrow owner required");
+  assert(escrowDestination != pad(32, ""), "escrow destination required");
+  assert(intentHash != pad(32, ""), "intent hash required");
+  const secret = holderSecret();
+  const exp = expiry();
+  assert(exp >= asOf, "expired");
+  const sub = subjectCommit(secret);
+  const pk = constructJubjubPoint(issuerX, issuerY);
+  assert(jubjubSchnorrVerify<1>(credentialMessage(credentialType, sub, exp), signature(), pk), "bad signature");
+  proven = true;
+  nullifier = disclose(escrowNullifier(secret));
+  credentialNullifier = disclose(credNullifier(secret));
+}
+
+// Writes the XRPL preimage to public state only after prove() has succeeded.
+// Anyone who already knows the preimage can ignore this and finish the escrow.
+export circuit reveal(): [] {
+  assert(proven, "eligibility not proven");
+  assert(!preimageRevealed, "preimage already revealed");
+  const p = releasePreimage();
+  assert(persistentHash<Vector<2, Bytes<32>>>([pad(32, "corvuszk:preimage:v1"), p]) == preimageCommit, "preimage mismatch");
+  revealedPreimage = disclose(p);
+  preimageRevealed = true;
+}
