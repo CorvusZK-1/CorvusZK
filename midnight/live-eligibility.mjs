@@ -164,6 +164,9 @@ export async function main() {
     }
     const fin = elig.fulfillmentFromRevealedLedger(state.rawLedger, {
       ...escrow,
+      issuer: issuer.publicKey,
+      credentialType: 'kyc-pass',
+      asOf,
       condition: terms.condition,
     });
     const finished = await client.submitAndWait(

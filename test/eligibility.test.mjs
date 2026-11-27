@@ -59,6 +59,9 @@ function run(parts, extra = {}) {
 
 function expectRelease(parts, over = {}) {
   return {
+    issuer: over.issuer ?? parts.issuer.publicKey,
+    credentialType: over.credentialType ?? parts.credential.CredentialType,
+    asOf: over.asOf ?? AS_OF,
     condition: over.condition ?? parts.bound.condition,
     owner: over.owner ?? parts.escrow.owner,
     offerSequence: over.offerSequence ?? parts.escrow.offerSequence,
