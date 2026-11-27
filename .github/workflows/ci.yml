@@ -53,7 +53,7 @@ jobs:
       - name: Type-check midnight/witnesses.ts against the compiler-generated types
         run: npm run typecheck:witnesses
 
-      - name: Offline tests (SDK units, eligibility circuit, contract simulator tests)
+      - name: Offline tests (SDK units, eligibility circuit, contract simulator, adversarial, payment lifecycle)
         run: npm run test:offline
 
       - name: Local circuit runs and offline examples

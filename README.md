@@ -21,6 +21,7 @@
    git clone https://github.com/CorvusZK-1/CorvusZK && cd CorvusZK
    npm ci && (cd midnight && npm ci)
    npm run test:offline         # SDK units + eligibility circuit + simulator tests for all 4 contracts
+   npm run test:lifecycle       # payment lifecycle: create, fund, prove, release, refund, timeout (offline)
    npm run simulate             # runs the compiled Compact circuits: pass and refuse cases
    npm run example:eligibility  # mock credential → prove → refusal before reveal → fulfillment from revealed state
    ```
