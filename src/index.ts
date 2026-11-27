@@ -162,6 +162,26 @@ export function isVerifiedChainEvidence(p: Pick<Proof, 'evidence' | 'zk'> | null
   return !!p && p.evidence === 'verified-chain-evidence';
 }
 
+/** Deterministic JSON (sorted keys) for signing and comparing claims. */
+export function canonicalJson(v: unknown): string {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(canonicalJson).join(',') + ']';
+  const o = v as Record<string, unknown>;
+  return '{' + Object.keys(o).sort().filter((key) => o[key] !== undefined).map((key) => JSON.stringify(key) + ':' + canonicalJson(o[key])).join(',') + '}';
+}
+
+/** The public parameters a circuit ledger reports must be the ones the claim states. */
+function claimMatchesLedger(claim: Claim, template: string, ledger: Record<string, unknown> | undefined): boolean {
+  if (!ledger) return false;
+  if (claim.kind === 'ageOver') {
+    return template === 'age_over' && Number(ledger.minAge) === claim.minAge && Number(ledger.asOfYear) === claim.asOfYear;
+  }
+  if (claim.kind === 'balanceAbove') {
+    return template === 'balance_above' && Number(ledger.threshold) === claim.threshold;
+  }
+  return claim.kind === 'condition' && template === 'condition';
+}
+
 function wellFormedProof(p: unknown): p is Proof {
   if (!p || typeof p !== 'object') return false;
   const q = p as Partial<Proof>;
@@ -174,8 +194,10 @@ function wellFormedProof(p: unknown): p is Proof {
 }
 
 type MidnightAttestation = {
-  v: 1;
+  /** v2 signs the claim itself (CZ-003a). v1 attestations are rejected. */
+  v: 2;
   evidence: EvidenceKind;
+  claim: Claim;
   mode: 'local-circuits' | 'preprod';
   template: string;
   circuit: string;
@@ -326,13 +348,14 @@ export class MidnightBackend implements ProofBackend {
   }
 
   private signAttestation(body: Omit<MidnightAttestation, 'sig'>): string {
-    const payload = Buffer.from(JSON.stringify(body));
+    const payload = Buffer.from(canonicalJson(body));
     const sig = crypto.sign(null, payload, this.key.privateKey).toString('hex');
     const full: MidnightAttestation = { ...body, sig };
     return Buffer.from(JSON.stringify(full)).toString('base64url');
   }
 
   private parseAttestation(attestation: string): MidnightAttestation | null {
+    if (typeof attestation !== 'string' || attestation.length > MAX_ATTESTATION_BYTES) return null;
     try {
       return JSON.parse(Buffer.from(attestation, 'base64url').toString('utf8')) as MidnightAttestation;
     } catch {
@@ -378,9 +401,13 @@ export class MidnightBackend implements ProofBackend {
               commitment: result.commitmentHex,
             };
 
+    if (!claimMatchesLedger(outClaim, result.template, result.ledger)) {
+      throw new Error('MidnightBackend.prove: circuit ledger does not match the requested claim; refusing to attest');
+    }
     const attestation = this.signAttestation({
-      v: 1,
+      v: 2,
       evidence: 'local-circuit-evaluation',
+      claim: outClaim,
       mode: this.opts.mode ?? 'local-circuits',
       template: result.template,
       circuit: result.circuit,
@@ -406,7 +433,10 @@ export class MidnightBackend implements ProofBackend {
     if (!wellFormedProof(proof)) return false;
     if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey) return false;
     const att = this.parseAttestation(proof.attestation);
-    if (!att || att.v !== 1 || !att.sig || !att.transcriptHex) return false;
+    if (!att || att.v !== 2 || !att.sig || !att.transcriptHex || !att.claim) return false;
+    // CZ-003a: the outer claim must be exactly the signed claim, and agree with the signed ledger.
+    if (canonicalJson(att.claim) !== canonicalJson(proof.claim)) return false;
+    if (!claimMatchesLedger(att.claim, att.template, att.ledger)) return false;
     // The evidence kind is signed; the outer label must match it.
     if (att.evidence !== proof.evidence) return false;
     if (att.evidence !== 'local-circuit-evaluation' && att.evidence !== 'chain-transaction-reported') return false;
@@ -417,7 +447,7 @@ export class MidnightBackend implements ProofBackend {
       type: 'spki',
     });
     try {
-      if (!crypto.verify(null, Buffer.from(JSON.stringify(body)), pub, Buffer.from(sig, 'hex'))) {
+      if (!crypto.verify(null, Buffer.from(canonicalJson(body)), pub, Buffer.from(sig, 'hex'))) {
         return false;
       }
     } catch {

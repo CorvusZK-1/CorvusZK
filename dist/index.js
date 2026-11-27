@@ -35,6 +35,27 @@ const claimBytes = (c) => Buffer.from(JSON.stringify(c));
 export function isVerifiedChainEvidence(p) {
     return !!p && p.evidence === 'verified-chain-evidence';
 }
+/** Deterministic JSON (sorted keys) for signing and comparing claims. */
+export function canonicalJson(v) {
+    if (v === null || typeof v !== 'object')
+        return JSON.stringify(v);
+    if (Array.isArray(v))
+        return '[' + v.map(canonicalJson).join(',') + ']';
+    const o = v;
+    return '{' + Object.keys(o).sort().filter((key) => o[key] !== undefined).map((key) => JSON.stringify(key) + ':' + canonicalJson(o[key])).join(',') + '}';
+}
+/** The public parameters a circuit ledger reports must be the ones the claim states. */
+function claimMatchesLedger(claim, template, ledger) {
+    if (!ledger)
+        return false;
+    if (claim.kind === 'ageOver') {
+        return template === 'age_over' && Number(ledger.minAge) === claim.minAge && Number(ledger.asOfYear) === claim.asOfYear;
+    }
+    if (claim.kind === 'balanceAbove') {
+        return template === 'balance_above' && Number(ledger.threshold) === claim.threshold;
+    }
+    return claim.kind === 'condition' && template === 'condition';
+}
 function wellFormedProof(p) {
     if (!p || typeof p !== 'object')
         return false;
@@ -174,12 +195,14 @@ export class MidnightBackend {
         };
     }
     signAttestation(body) {
-        const payload = Buffer.from(JSON.stringify(body));
+        const payload = Buffer.from(canonicalJson(body));
         const sig = crypto.sign(null, payload, this.key.privateKey).toString('hex');
         const full = { ...body, sig };
         return Buffer.from(JSON.stringify(full)).toString('base64url');
     }
     parseAttestation(attestation) {
+        if (typeof attestation !== 'string' || attestation.length > MAX_ATTESTATION_BYTES)
+            return null;
         try {
             return JSON.parse(Buffer.from(attestation, 'base64url').toString('utf8'));
         }
@@ -220,9 +243,13 @@ export class MidnightBackend {
                     threshold: claim.threshold,
                     commitment: result.commitmentHex,
                 };
+        if (!claimMatchesLedger(outClaim, result.template, result.ledger)) {
+            throw new Error('MidnightBackend.prove: circuit ledger does not match the requested claim; refusing to attest');
+        }
         const attestation = this.signAttestation({
-            v: 1,
+            v: 2,
             evidence: 'local-circuit-evaluation',
+            claim: outClaim,
             mode: this.opts.mode ?? 'local-circuits',
             template: result.template,
             circuit: result.circuit,
@@ -248,7 +275,12 @@ export class MidnightBackend {
         if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey)
             return false;
         const att = this.parseAttestation(proof.attestation);
-        if (!att || att.v !== 1 || !att.sig || !att.transcriptHex)
+        if (!att || att.v !== 2 || !att.sig || !att.transcriptHex || !att.claim)
+            return false;
+        // CZ-003a: the outer claim must be exactly the signed claim, and agree with the signed ledger.
+        if (canonicalJson(att.claim) !== canonicalJson(proof.claim))
+            return false;
+        if (!claimMatchesLedger(att.claim, att.template, att.ledger))
             return false;
         // The evidence kind is signed; the outer label must match it.
         if (att.evidence !== proof.evidence)
@@ -262,7 +294,7 @@ export class MidnightBackend {
             type: 'spki',
         });
         try {
-            if (!crypto.verify(null, Buffer.from(JSON.stringify(body)), pub, Buffer.from(sig, 'hex'))) {
+            if (!crypto.verify(null, Buffer.from(canonicalJson(body)), pub, Buffer.from(sig, 'hex'))) {
                 return false;
             }
         }

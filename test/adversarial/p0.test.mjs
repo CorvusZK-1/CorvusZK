@@ -42,14 +42,14 @@ if (bridge) {
   });
 
   // ---------------- CZ-003 (a) ----------------
-  test('CZ-003a: relabelling the outer claim must break verification', { todo: 'CZ-003a (PR-3)' }, async () => {
+  test('CZ-003a: relabelling the outer claim must break verification', async () => {
     const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits' });
     const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
     const forged = structuredClone(p);
     forged.claim = { kind: 'balanceAbove', threshold: 1_000_000_000, commitment: '00'.repeat(32) };
     assert.equal(await b.verify(forged), false);
   });
-  test('CZ-003b: editing a claim parameter must break verification', { todo: 'CZ-003a (PR-3)' }, async () => {
+  test('CZ-003b: editing a claim parameter must break verification', async () => {
     const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits' });
     const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
     const forged = structuredClone(p);
@@ -119,4 +119,22 @@ test('CZ-001: unknown, malformed and oversized evidence is rejected', async () =
   assert.equal(await b.verify({ ...p, attestation: 'not base64 json' }), false);
   assert.equal(await b.verify({ ...p, attestation: 'A'.repeat(300_000) }), false);
   assert.equal(await b.verify(null), false);
+});
+
+// ---------------- CZ-003 (a): claim <-> signed circuit ledger ----------------
+test('CZ-003a: claim parameters must match the circuit ledger that was signed', async () => {
+  // A bridge that reports a different public parameter than the claim asked for.
+  const lying = async ({ template }) => ({ template, circuit: 'prove', commitmentHex: 'aa'.repeat(32), ledger: { proven: true, minAge: 10, asOfYear: 2026 }, transcriptHex: 'bb'.repeat(32) });
+  const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits', bridge: { proveLocal: lying } });
+  await assert.rejects(k.proveAgeOver(b, 1990, 18, 2026, 'salt'), /does not match/);
+});
+test('CZ-003a: attestations without a signed claim (v1) are rejected', async () => {
+  const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits', bridge: { proveLocal: okLocal } });
+  const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
+  const att = JSON.parse(Buffer.from(p.attestation, 'base64url').toString());
+  assert.equal(att.v, 2);
+  assert.deepEqual(att.claim, p.claim);
+  const v1 = { ...att, v: 1 };
+  delete v1.claim;
+  assert.equal(await b.verify({ ...p, attestation: Buffer.from(JSON.stringify(v1)).toString('base64url') }), false);
 });
