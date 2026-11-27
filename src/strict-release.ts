@@ -23,6 +23,13 @@ export type StrictReleaseStatus = 'settled' | 'already-settled' | 'refused' | 'u
 export type StrictReleaseResult = { status: StrictReleaseStatus; reason: string; txHash?: string };
 
 export type TrustMode = 'trusted-policy-party';
+/** ADR-001: the only supported product mode. */
+export const TRUST_MODE: TrustMode = 'trusted-policy-party';
+export const TRUST_MODE_DISCLOSURE =
+  'Trusted policy party mode (ADR-001). XRPL does not verify the Midnight proof: it checks only the ' +
+  'crypto-condition, the fixed destination and the time bounds. The policy party that holds the preimage ' +
+  '(by default the payer side) can release early or withhold; withholding ends in a refund to the payer ' +
+  'after CancelAfter. Testnet only: the demo credential signature is not secure (CZ-005).';
 
 type XrplLike = {
   request: (r: any) => Promise<any>;
@@ -53,6 +60,7 @@ export async function releaseStrict(o: {
 }): Promise<StrictReleaseResult> {
   const res = (status: StrictReleaseStatus, reason: string, txHash?: string): StrictReleaseResult => ({ status, reason, ...(txHash ? { txHash } : {}) });
   const nowSec = Math.floor((o.now ? o.now() : Date.now()) / 1000);
+  if (o?.trustMode !== TRUST_MODE) return res('refused', `trust-mode-required: pass trustMode '${TRUST_MODE}' (ADR-001)`);
 
   let intent: IntentV2;
   let hash: string;
@@ -61,6 +69,10 @@ export async function releaseStrict(o: {
     hash = intentHashV2(intent);
   } catch (e) {
     return res('refused', 'malformed-intent: ' + (e as Error).message);
+  }
+  // Only the mock issuer exists and its signature leaks the issuer key (CZ-005): no mainnet.
+  if (intent.environment === 'mainnet' || intent.midnightNetwork === 'mainnet') {
+    return res('refused', 'mainnet-not-supported: test networks only until the credential signature is replaced (CZ-005, ADR-004)');
   }
   const rec = o.registry.get(intent.intentId);
   if (!rec) return res('refused', 'intent-not-registered');

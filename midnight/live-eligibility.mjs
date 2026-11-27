@@ -4,9 +4,8 @@
  * XRPL testnet EscrowCreate -> Midnight Preprod deploy -> prove -> reveal
  * -> read the preimage from indexer state -> XRPL EscrowFinish.
  *
- * Default preimage mode is `destination`: the destination samples the preimage.
- * The payer is given only the condition and the commitment.
- * Set PREIMAGE_MODE=payer to use the payer-sampled mode instead.
+ * Default (ADR-001): the payer-side policy party samples the preimage. PREIMAGE_MODE=destination
+ * reproduces the recorded 12 Nov 2026 run, where the destination sampled it.
  *
  * Prints transaction hashes, explorer links, and fees copied from receipts.
  * Does not print seeds, the Blockfrost project id, the preimage, or the holder secret.
@@ -101,7 +100,8 @@ export async function main() {
   }
   const proofServer = process.env.MIDNIGHT_PROOF_SERVER ?? 'http://localhost:6300';
   await assertProofServer(proofServer);
-  const role = process.env.PREIMAGE_MODE === 'payer' ? 'payer' : 'destination';
+  // ADR-001 default: payer-side policy party. PREIMAGE_MODE=destination reproduces the recorded 12 Nov run.
+  const role = process.env.PREIMAGE_MODE === 'destination' ? 'destination' : 'payer';
   const sampled = elig.samplePreimage(role);
   const terms = elig.payerFacingTerms(sampled);
   const issuer = elig.createMockIssuer();

@@ -23,7 +23,7 @@ import cc from 'five-bells-condition';
 import { decodeAccountID } from 'xrpl';
 
 export const MOCK_ISSUER_LABEL =
-  'MOCK ISSUER — demonstration only. Not a regulated KYC or accreditation provider, not an XRPL CredentialCreate, and not checked by the XRPL ledger.';
+  'MOCK ISSUER — demonstration only. INSECURE: anyone holding one credential can recover this issuer\'s private key (CZ-005). Test fixtures only. Not a regulated KYC or accreditation provider, not an XRPL CredentialCreate, and not checked by the XRPL ledger.';
 
 /** Largest scalar accepted by ecMulGenerator in compact-runtime 0.16.0 (EmbeddedFr). */
 export const EMBEDDED_SCALAR_MODULUS =
@@ -187,6 +187,7 @@ export function createMockIssuer() {
   const pub = pointOf(secretKey);
   return {
     mock: true,
+    testOnly: true,
     label: MOCK_ISSUER_LABEL,
     scheme: 'compact-0.31.1-embedded-schnorr-96bit',
     secretKey,
@@ -232,6 +233,7 @@ export function issueMockCredential(issuer, o) {
   }
   return {
     mock: true,
+    testOnly: true,
     label: MOCK_ISSUER_LABEL,
     scheme: issuer.scheme,
     alignment:
@@ -264,7 +266,7 @@ export function xrplConditionFromPreimage(preimage) {
 
 const TRUST = {
   payer:
-    'The payer sampled the preimage. They can submit EscrowFinish before any Midnight proof. The destination cannot finish until the preimage is revealed on Midnight or the payer shares it.',
+    'Default (ADR-001): the payer-side policy party sampled the preimage. It can submit EscrowFinish before any Midnight proof (which only pays the fixed destination early) or withhold reveal (the payer is refunded after CancelAfter). The destination cannot finish until the preimage is revealed on Midnight or the policy party shares it.',
   destination:
     'The destination (policy party) sampled the preimage. They can submit EscrowFinish before any Midnight proof. The payer receives only the condition and the preimage commitment, so the payer cannot finish early.',
 };

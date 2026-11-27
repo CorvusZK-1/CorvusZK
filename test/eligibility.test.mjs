@@ -180,7 +180,7 @@ if (elig) {
     assert.equal('fulfillment' in facing, false);
     assert.equal(JSON.stringify(facing).includes(Buffer.from(sampled.holder.preimage).toString('hex')), false);
     const payer = elig.samplePreimage('payer');
-    assert.match(payer.trust, /payer sampled the preimage/i);
+    assert.match(payer.trust, /payer-side policy party sampled the preimage/i);
     assert.equal(payer.holder.role, 'payer');
     assert.throws(() => elig.samplePreimage('seller'), /role/);
   });

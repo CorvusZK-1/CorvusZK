@@ -8,6 +8,9 @@ export type StrictReleaseResult = {
     txHash?: string;
 };
 export type TrustMode = 'trusted-policy-party';
+/** ADR-001: the only supported product mode. */
+export declare const TRUST_MODE: TrustMode;
+export declare const TRUST_MODE_DISCLOSURE: string;
 type XrplLike = {
     request: (r: any) => Promise<any>;
     submitAndWait: (tx: any, o: {
