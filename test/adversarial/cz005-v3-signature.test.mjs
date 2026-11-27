@@ -26,7 +26,7 @@ if (elig) {
   async function run(o) {
     const sampled = elig.samplePreimage('payer');
     return elig.runEligibility({
-      contractVersion: 3, intentHash, asOf, preimageCommit: sampled.publicTerms.preimageCommit, escrow,
+      contractVersion: 3, intentHash, asOf, blockTime: o.blockTime ?? asOf + 60n, preimageCommit: sampled.publicTerms.preimageCommit, escrow,
       reveal: o.reveal ?? false, releasePreimage: sampled.holder.preimage, ...o,
     });
   }
@@ -120,6 +120,32 @@ if (elig) {
     }
     assert.equal(checked, 5, 'challenge derivation matches the compact-runtime documentation');
     assert.equal(recovered, 0);
+  });
+
+  // ---------------- CZ-007 (expiry vs current time) ----------------
+  test('CZ-007 v3: a credential that expired cannot prove by deploying with an old asOf', async () => {
+    const issuer = elig.createIssuerV3();
+    const holderSecret = new Uint8Array(crypto.randomBytes(32));
+    const credential = await elig.issueCredentialV3(issuer, { holderSecret, credentialType: 'kyc-pass', expiry: 1_000_000_000n }); // expired in 2001
+    // Deployer picks asOf = 999,999,999 (the v1/v2 attack). Proving happens "now" by block time.
+    await assert.rejects(run({ issuer, credential, holderSecret, asOf: 999_999_999n, blockTime: BigInt(Math.floor(Date.now() / 1000)) }), /proof window closed/);
+  });
+  test('CZ-007 v3: proof window is one day after asOf', async () => {
+    const f = await fresh();
+    const w = BigInt(await elig.proofWindowSecondsV3());
+    assert.equal(w, 86400n);
+    assert.equal((await run({ ...f, blockTime: asOf + w - 1n })).ledger.proven, true);
+    await assert.rejects(run({ ...f, blockTime: asOf + w }), /proof window closed/);
+  });
+  test('CZ-007 v3: asOf in the future is refused', async () => {
+    const f = await fresh();
+    await assert.rejects(run({ ...f, blockTime: asOf - 10n }), /asOf is in the future/);
+  });
+  test('CZ-007 v3: credential must stay valid through the proof window', async () => {
+    const issuer = elig.createIssuerV3();
+    const holderSecret = new Uint8Array(crypto.randomBytes(32));
+    const credential = await elig.issueCredentialV3(issuer, { holderSecret, credentialType: 'kyc-pass', expiry: asOf + 3600n });
+    await assert.rejects(run({ issuer, credential, holderSecret, blockTime: asOf + 60n }), /credential expired/);
   });
 
   test('v1 and v2 still run unchanged (recorded demo stays valid)', async () => {

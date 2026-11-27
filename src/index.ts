@@ -166,7 +166,7 @@ export type VerificationOutcome = {
  */
 export type ExpectedChainPolicy = {
   network: string;
-  template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2';
+  template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2' | 'eligibility_v3';
   contractAddress: string;
   /** Public ledger values that must match exactly (compared as strings). */
   publicParams?: Record<string, string | number | bigint>;
@@ -178,6 +178,7 @@ export type ExpectedChainPolicy = {
 
 const SUCCESS_FLAGS: Record<string, (l: Record<string, unknown>) => boolean> = {
   eligibility_v2: (l) => l.proven === true && l.preimageRevealed === true,
+  eligibility_v3: (l) => l.proven === true && l.preimageRevealed === true,
   condition: (l) => l.released === true,
   age_over: (l) => l.proven === true,
   balance_above: (l) => l.proven === true,
@@ -701,6 +702,10 @@ export class MidnightBackend implements ProofBackend {
     asOf: bigint | number | string;
     preimageCommit: Uint8Array;
     escrow: { owner: string | Uint8Array; offerSequence: number | bigint; destination: string | Uint8Array };
+    /** 1 (default, demo), 2 (strict path, mock issuer) or 3 (strict path, stdlib JubJub Schnorr issuer). */
+    contractVersion?: 1 | 2 | 3;
+    /** Required for contractVersion 2 and 3: SHA-256 of the canonical IntentV2 encoding. */
+    intentHash?: Uint8Array;
     witness?: Record<string, unknown>;
     walletName?: string;
     syncTimeoutMs?: number;
@@ -725,6 +730,7 @@ export class MidnightBackend implements ProofBackend {
     circuit: 'prove' | 'reveal';
     contractAddress: string;
     witness: Record<string, unknown>;
+    contractVersion?: 1 | 2 | 3;
     walletName?: string;
     syncTimeoutMs?: number;
   }): Promise<OnChainSubmitResult> {
@@ -748,7 +754,7 @@ export class MidnightBackend implements ProofBackend {
    * Read the eligibility ledger from the Preprod indexer.
    * `revealedPreimage` is set only after reveal() is in the indexed state.
    */
-  async readEligibilityState(o: { contractAddress: string; waitMs?: number }): Promise<{
+  async readEligibilityState(o: { contractAddress: string; waitMs?: number; contractVersion?: 1 | 2 | 3 }): Promise<{
     found: boolean;
     proven: boolean;
     preimageRevealed: boolean;
@@ -769,6 +775,7 @@ export class MidnightBackend implements ProofBackend {
     return bridge.readEligibilityState({
       contractAddress: o.contractAddress,
       waitMs: o.waitMs,
+      contractVersion: o.contractVersion,
       indexerHttpUrl: cfg.indexerHttpUrl,
       indexerWsUrl: cfg.indexerWsUrl,
       managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,

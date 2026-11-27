@@ -352,9 +352,9 @@ async function loadContract(managedRoot, template = 'eligibility') {
 }
 
 // compact-runtime 0.21: circuits are async; the new state is in queryContexts[address].
-async function call(C, contractState, name) {
+async function call(C, contractState, name, time) {
   const addr = rt.dummyContractAddress();
-  const ctx = rt.createCircuitContext({ circuitId: name, contractAddress: addr, coinPublicKeyOrZswapState: '0'.repeat(64), contractState, privateState: {} });
+  const ctx = rt.createCircuitContext({ circuitId: name, contractAddress: addr, coinPublicKeyOrZswapState: '0'.repeat(64), contractState, privateState: {}, ...(time != null ? { time: Number(time) } : {}) });
   const r = await C.circuits[name](ctx);
   return { ...r, context: { ...r.context, currentQueryContext: r.context.queryContexts[addr] } };
 }
@@ -402,15 +402,15 @@ export async function runEligibility(o) {
   );
   let state = initial.currentContractState;
   if (o.only !== 'reveal') {
-    const proved = await call(C, state, 'prove');
+    const proved = await call(C, state, 'prove', o.blockTime);
     state = proved.context.currentQueryContext.state;
-    if (o.again) await call(C, state, 'prove');
+    if (o.again) await call(C, state, 'prove', o.blockTime);
   }
   if (o.reveal || o.only === 'reveal') {
     const C2 = new m.Contract(
       witnesses({ ...o, holderSecret, signature, expiry, releasePreimage: o.releasePreimage })
     );
-    const revealed = await call(C2, state, 'reveal');
+    const revealed = await call(C2, state, 'reveal', o.blockTime);
     state = revealed.context.currentQueryContext.state;
   }
   const ledger = m.ledger(state);
@@ -541,6 +541,12 @@ export function createIssuerV3() {
 export async function credentialMessageV3({ credentialType, subject, expiry }) {
   const m = await v3();
   return m.pureCircuits.credentialMessage(pad32(credentialType), bytes32(subject), BigInt(expiry));
+}
+
+/** CZ-007: seconds after asOf during which eligibility_v3 prove() is accepted (by block time). */
+export async function proofWindowSecondsV3() {
+  const m = await v3();
+  return m.pureCircuits.proofWindowSeconds();
 }
 
 /** Issue a v3 credential. The holder secret is not part of the record; only its commitment. */

@@ -308,7 +308,7 @@ export function witnessesFor(template, witness) {
       salt: (c) => [c.privateState, salt],
     };
   }
-  if (template === 'eligibility') return eligibilityWitnesses(() => witness);
+  if (template === 'eligibility' || template === 'eligibility_v2' || template === 'eligibility_v3') return eligibilityWitnesses(() => witness);
   throw new Error(`unknown template: ${template}`);
 }
 
@@ -335,6 +335,17 @@ function eligibilityWitnesses(getWitness) {
       const sig = getWitness()?.signature ?? {};
       return [c.privateState, sig.s != null ? BigInt(sig.s) : 0n];
     },
+    // eligibility_v3 (CZ-005): stdlib JubJub Schnorr signature from issueCredentialV3.
+    signature: (c) => {
+      const sig = getWitness()?.signature ?? {};
+      return [
+        c.privateState,
+        {
+          announcement: { x: sig.announcementX != null ? BigInt(sig.announcementX) : 0n, y: sig.announcementY != null ? BigInt(sig.announcementY) : 0n },
+          response: sig.response != null ? BigInt(sig.response) : 0n,
+        },
+      ];
+    },
     releasePreimage: (c) => {
       const w = getWitness() ?? {};
       return [c.privateState, w.releasePreimage ? toBytes32(w.releasePreimage) : freshZeros()];
@@ -343,7 +354,7 @@ function eligibilityWitnesses(getWitness) {
 }
 
 export function circuitFor(template, witness) {
-  if (template === 'eligibility') return witness?.circuit === 'reveal' ? 'reveal' : 'prove';
+  if (template.startsWith('eligibility')) return witness?.circuit === 'reveal' ? 'reveal' : 'prove';
   return template === 'condition' ? 'attest' : 'prove';
 }
 
@@ -477,8 +488,8 @@ export async function deployEligibility(o) {
     syncTimeoutMs: o.syncTimeoutMs,
   });
   const box = { witness: o.witness ?? {} };
-  // contractVersion 2 deploys eligibility_v2 (strict path; constructor also takes intentHash).
-  const template = o.contractVersion === 2 ? 'eligibility_v2' : 'eligibility';
+  // contractVersion 2 deploys eligibility_v2, 3 deploys eligibility_v3 (strict path; constructor also takes intentHash).
+  const template = eligibilityTemplate(o.contractVersion);
   try {
     const m = await d.loadContractFn(template, d.managedRoot);
     const args = eligibilityDeployArgs(o);
@@ -496,7 +507,7 @@ export async function deployEligibility(o) {
     const pub = deployed.deployTxData?.public ?? deployed.public ?? deployed;
     const contractAddress = String(pub.contractAddress ?? '');
     if (!contractAddress) throw new Error('deployEligibility: deploy receipt had no contractAddress');
-    eligibilitySessions.set(contractAddress, { box, deployed, wallet });
+    eligibilitySessions.set(contractAddress, { box, deployed, wallet, template });
     return txReceipt(pub, { template, circuit: 'deploy', contractAddress });
   } catch (err) {
     try {
@@ -526,14 +537,20 @@ export async function callEligibility(o) {
     }
     const r = await session.deployed.callTx[circuit]();
     const pub = r.public ?? r;
-    return txReceipt(pub, { template: 'eligibility', circuit, contractAddress: o.contractAddress });
+    return txReceipt(pub, { template: session.template ?? 'eligibility', circuit, contractAddress: o.contractAddress });
   }
   return submitCallTx({
     ...o,
-    template: 'eligibility',
+    template: eligibilityTemplate(o.contractVersion),
     circuit,
     witness: { ...o.witness, circuit },
   });
+}
+
+export function eligibilityTemplate(contractVersion) {
+  if (contractVersion === 3) return 'eligibility_v3';
+  if (contractVersion === 2) return 'eligibility_v2';
+  return 'eligibility';
 }
 
 export async function closeEligibilitySession(contractAddress) {
@@ -558,7 +575,7 @@ export async function readEligibilityState(o) {
   const waitMs = Number(o.waitMs ?? 0);
   const { publicLedger } = await import('./eligibility.mjs');
   const load = deps.loadContract ?? loadContract;
-  const m = await load(o.contractVersion === 2 ? 'eligibility_v2' : 'eligibility', managedRoot);
+  const m = await load(eligibilityTemplate(o.contractVersion), managedRoot);
   const query =
     deps.queryContractState ??
     (async (address) => {

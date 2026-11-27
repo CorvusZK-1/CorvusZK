@@ -8,39 +8,39 @@
     "type": "directory",
     "contract-info.json": {
       "type": "file",
-      "size": 5148,
-      "hash": "81d41a8dacbeba363449f7cbfa2bd184ebf4e1efab63c38c5674a5b95251c7e9"
+      "size": 5368,
+      "hash": "e6bbff6100c9e3c19286be049ecd05c5248ba2895ecc4c247e264657f8daa017"
     }
   },
   "contract": {
     "type": "directory",
     "index.d.ts": {
       "type": "file",
-      "size": 3497,
-      "hash": "56d8688e04cdaf2460d2b50013115f6ddad058a991e2153c54e114376b1acc32"
+      "size": 3651,
+      "hash": "048a3a5b65ca339a5e29a89f9dcb38f0e9f600e871e5c0ea326dc322ace22fdf"
     },
     "index.js": {
       "type": "file",
-      "size": 112629,
-      "hash": "b5bd450256d4e588013b900865f6b1850d3190313ef3aa59034427f31c4b5e7b"
+      "size": 117701,
+      "hash": "150a9f27687d4e99b437affbb81739823ea4a5691f1e55b47e8a9bdffd2d59b7"
     },
     "index.js.map": {
       "type": "file",
-      "size": 3897,
-      "hash": "64fae67247dd33ab47184977bd4b472c506111450d16629bf67d1f93ba724254"
+      "size": 4110,
+      "hash": "a72be8aee1d44ab58077e2bf5638bd62fa14c65fff860bd4a149eb02949398a2"
     }
   },
   "zkir": {
     "type": "directory",
     "prove.bzkir": {
       "type": "file",
-      "size": 3908,
-      "hash": "0546242e446c3e701e52aa8266aa439397d65a36a9cf8f25c002f9608c4f3f44"
+      "size": 4398,
+      "hash": "2305a16461614c9e32cbce1cfe25862e568a034a3388ea09ae707c63e2bd9415"
     },
     "prove.zkir": {
       "type": "file",
-      "size": 13814,
-      "hash": "839d4a26c3b82825586b561b62ce13c2147db1728a0c5a3e5436f5d8c6c8a265"
+      "size": 15489,
+      "hash": "a8e59ebe4fadf151b5d8a529b542f2f99c9bcb753dcab47c9894906a33666abf"
     },
     "reveal.bzkir": {
       "type": "file",
@@ -57,13 +57,13 @@
     "type": "directory",
     "prove.prover": {
       "type": "file",
-      "size": 49291748,
-      "hash": "e9586452de156d42385ceb7b7a3d86e0be46ad4cb82efbf64bfa8b94cd4c41fc"
+      "size": 49292238,
+      "hash": "4e454e2458172c28153a0d99d1927c440254885739ae464677898c69ce3cb1af"
     },
     "prove.verifier": {
       "type": "file",
       "size": 2313,
-      "hash": "b87e89ff4dca504d530d22df832e8544dd60cce1d2c5c2d3674017971f71f3fd"
+      "hash": "b7de4b350f6175e91b13f32ee327580c4bec0e7b8afd13be0ccbdc74d2bdb2cd"
     },
     "reveal.prover": {
       "type": "file",

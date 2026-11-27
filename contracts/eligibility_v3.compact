@@ -13,6 +13,8 @@ import CompactStandardLibrary;
 // exported as the pure circuit credentialMessage so the issuer signs exactly what the circuit checks.
 //
 // Status: NOT reviewed. Test networks only until an outside review (ADR-004 rollout step 4).
+// CZ-007: prove() must run within PROOF_WINDOW (1 day) of asOf by block time, and the credential
+// must be valid until asOf + PROOF_WINDOW, so an expired credential cannot prove at any time.
 // v1 and v2 stay for the recorded demo and are labelled insecure.
 // XRPL still does not verify this proof (CZ-004, ADR-001): trusted policy party release.
 
@@ -30,6 +32,10 @@ export ledger preimageRevealed: Boolean;
 export ledger revealedPreimage: Bytes<32>;
 export ledger intentHash: Bytes<32>;
 export ledger credentialNullifier: Bytes<32>;
+
+export pure circuit proofWindowSeconds(): Uint<64> {
+  return 86400;
+}
 
 witness holderSecret(): Bytes<32>;
 witness expiry(): Uint<64>;
@@ -108,7 +114,14 @@ export circuit prove(): [] {
   assert(intentHash != pad(32, ""), "intent hash required");
   const secret = holderSecret();
   const exp = expiry();
-  assert(exp >= asOf, "expired");
+  // CZ-007: tie the check to the current block time without disclosing the private expiry.
+  // prove() must run within PROOF_WINDOW seconds after asOf, and the credential must still be valid
+  // at asOf + PROOF_WINDOW. So at proof time: blockTime < asOf + PROOF_WINDOW <= expiry.
+  // An old asOf no longer lets an expired credential prove, and a future asOf cannot be used either.
+  const deadline = (asOf + proofWindowSeconds()) as Uint<64>;
+  assert(blockTimeGte(asOf), "asOf is in the future");
+  assert(blockTimeLt(deadline), "proof window closed");
+  assert(exp >= deadline, "credential expired");
   const sub = subjectCommit(secret);
   const pk = constructJubjubPoint(issuerX, issuerY);
   assert(jubjubSchnorrVerify<1>(credentialMessage(credentialType, sub, exp), signature(), pk), "bad signature");

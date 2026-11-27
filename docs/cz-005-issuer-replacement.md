@@ -40,11 +40,31 @@ The stdlib verifier takes the response as a `Field` and accepts `s + n` (n = Jub
 This does not let anyone forge or reuse a credential here (nullifiers come from the holder secret, not the
 signature bytes), but nothing should use signature bytes as an identifier. A test records this as `KNOWN`.
 
+## CZ-007 fix in v3
+
+`eligibility_v2` checked the credential expiry only against `asOf`, a value the deployer picks, so an expired
+credential could prove if the deployer chose an old `asOf`. `eligibility_v3` ties the check to the Midnight block
+time without disclosing the private expiry:
+
+- `prove()` must run within one day (`proofWindowSeconds()`, 86,400 s) after `asOf`, by block time
+  (`blockTimeGte(asOf)` and `blockTimeLt(asOf + window)`);
+- the credential must be valid until `asOf + window`.
+
+So at proof time, block time < `asOf + window` <= expiry. Tests cover the old-`asOf` attack, the window edges, a
+future `asOf`, and a credential that expires inside the window. Age (year-only) and balance encoding parts of
+CZ-007 apply to the `age_over` / `balance_above` templates and are not changed here.
+
+## Wiring (done on this branch)
+
+- `releaseStrict({ contractTemplate: 'eligibility_v3' })` checks the v3 artifact id and reads v3 state strictly.
+  Default stays `eligibility_v2` so existing callers are unchanged.
+- `MidnightBackend.deployEligibility / callEligibility / readEligibilityState` take `contractVersion: 3`.
+- The payment lifecycle tests run for both v2 and v3.
+- `midnight/live-eligibility-v3.mjs`: XRPL testnet escrow -> IntentV2 + policy registry -> Preprod deploy of v3 ->
+  prove -> reveal -> `releaseStrict` -> EscrowFinish. Test networks only.
+
 ## Remaining work
 
-1. Point the strict releaser (`releaseStrict`, intent `circuitArtifactId`) and the SDK deploy/call helpers at
-   `eligibility_v3`, keeping v2 for the demo.
-2. Lifecycle tests on v3, and a Preprod run (deploy, prove, reveal, XRPL testnet release).
-3. Issuer key custody, rotation and revocation (separate decision; needed before any non-test issuer).
-4. Fix CZ-007 (expiry checked against a deploy-time `asOf`) in the same contract version if possible.
-5. Outside cryptographic review. Only after that: lift the SDK's mainnet refusal and redeploy on mainnet.
+1. Issuer key custody, rotation and revocation (separate decision; needed before any non-test issuer).
+2. Outside cryptographic review, including the non-canonical response finding above.
+3. Only after review: lift the SDK's mainnet refusal and redeploy on mainnet.

@@ -20,11 +20,13 @@ export type ProvableCircuits<PS> = {
 }
 
 export type PureCircuits = {
+  proofWindowSeconds(): bigint;
   subjectCommit(secret_0: Uint8Array): Uint8Array;
   credentialMessage(ctype_0: Uint8Array, sub_0: Uint8Array, exp_0: bigint): bigint[];
 }
 
 export type Circuits<PS> = {
+  proofWindowSeconds(context: __compactRuntime.CircuitContext<PS>): Promise<__compactRuntime.CircuitResults<PS, bigint>>;
   subjectCommit(context: __compactRuntime.CircuitContext<PS>,
                 secret_0: Uint8Array): Promise<__compactRuntime.CircuitResults<PS, Uint8Array>>;
   credentialMessage(context: __compactRuntime.CircuitContext<PS>,

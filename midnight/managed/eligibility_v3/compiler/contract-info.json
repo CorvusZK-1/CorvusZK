@@ -5,6 +5,17 @@
   "runtime-version": "0.21.0",
   "circuits": [
     {
+      "name": "proofWindowSeconds",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+      ],
+      "result-type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
       "name": "subjectCommit",
       "pure": true,
       "proof": false,

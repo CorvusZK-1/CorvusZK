@@ -163,7 +163,7 @@ export type VerificationOutcome = {
  */
 export type ExpectedChainPolicy = {
     network: string;
-    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2';
+    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2' | 'eligibility_v3';
     contractAddress: string;
     /** Public ledger values that must match exactly (compared as strings). */
     publicParams?: Record<string, string | number | bigint>;
@@ -262,6 +262,10 @@ export declare class MidnightBackend implements ProofBackend {
             offerSequence: number | bigint;
             destination: string | Uint8Array;
         };
+        /** 1 (default, demo), 2 (strict path, mock issuer) or 3 (strict path, stdlib JubJub Schnorr issuer). */
+        contractVersion?: 1 | 2 | 3;
+        /** Required for contractVersion 2 and 3: SHA-256 of the canonical IntentV2 encoding. */
+        intentHash?: Uint8Array;
         witness?: Record<string, unknown>;
         walletName?: string;
         syncTimeoutMs?: number;
@@ -271,6 +275,7 @@ export declare class MidnightBackend implements ProofBackend {
         circuit: 'prove' | 'reveal';
         contractAddress: string;
         witness: Record<string, unknown>;
+        contractVersion?: 1 | 2 | 3;
         walletName?: string;
         syncTimeoutMs?: number;
     }): Promise<OnChainSubmitResult>;
@@ -281,6 +286,7 @@ export declare class MidnightBackend implements ProofBackend {
     readEligibilityState(o: {
         contractAddress: string;
         waitMs?: number;
+        contractVersion?: 1 | 2 | 3;
     }): Promise<{
         found: boolean;
         proven: boolean;
