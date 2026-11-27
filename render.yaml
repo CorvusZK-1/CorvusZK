@@ -1,0 +1,17 @@
+# Free Render web service for the testnet-only demo.
+# HTTPS is provided by Render. Do not attach a custom domain until that change is approved.
+services:
+  - type: web
+    name: corvuszk-demo
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node demo/hosted-server.mjs
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NETWORK
+        value: xrpl-testnet
+      # Optional, after the service exists:
+      # ALLOWED_ORIGINS=https://corvuszk.com,https://www.corvuszk.com,https://<service>.onrender.com

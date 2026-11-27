@@ -141,6 +141,7 @@ npm run demo:offline        # no network: the 3 claims, passing and refused case
 npm run example:offline     # same idea as a copy-pasteable examples/ script
 npm test                    # all tests, including 1 live XRPL testnet escrow test
 npm run demo                # local web demo at http://localhost:8787 using free XRPL testnet faucet wallets
+npm run demo:hosted         # same testnet demo for a host like Render (PORT, /healthz, rate limits)
 ```
 
 ### Which backend to use

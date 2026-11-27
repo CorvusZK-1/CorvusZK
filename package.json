@@ -11,6 +11,7 @@
     "test": "node --test test/*.test.mjs test/adversarial/*.test.mjs test/lifecycle/*.test.mjs",
     "demo": "node demo/server.mjs",
     "demo:offline": "node demo/offline.mjs",
+    "demo:hosted": "node demo/hosted-server.mjs",
     "simulate": "cd midnight && node simulate.mjs",
     "example:offline": "node examples/escrow-offline.mjs",
     "example:eligibility": "node examples/eligibility-release.mjs",
