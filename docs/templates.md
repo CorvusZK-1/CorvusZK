@@ -37,7 +37,7 @@ This is not an XRPL CredentialCreate, not Ed25519, and not a regulated KYC check
 - A commitment only proves the number is the one *committed to*. `age_over` and `balance_above` still do not check an issuer signature. `eligibility` checks a mock issuer signature over a subject commitment. A bank, exchange, or ID issuer is not integrated.
 - `asOfYear` is set at deploy time, not read from a clock.
 - The JS `LocalSimulationBackend` uses SHA-256 commitments; the Compact templates use `persistentHash`. They are not interchangeable yet.
-- The four contracts are live on Midnight mainnet (13 Nov 2026) and on Midnight Preprod. Unaudited. Not for real value. The full prove → reveal → XRPL EscrowFinish path has been proven on Preprod + XRPL testnet only. The mainnet `eligibility` instance is a demonstration only (mock issuer, no real XRPL escrow, no `reveal`).
+- The four contracts are live on Midnight mainnet (13 Nov 2026) and on Midnight Preprod. Unaudited. Not for real value. The mainnet eligibility contract uses the insecure demo issuer and must not be used with real value ([SECURITY-NOTICE.md](../SECURITY-NOTICE.md)). That instance had no real XRPL escrow and no `reveal`. The full prove → reveal → XRPL EscrowFinish path has been proven on Preprod + XRPL testnet only.
 
 ## Try them with no chain and no money
 ```bash

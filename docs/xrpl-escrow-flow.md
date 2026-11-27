@@ -1,6 +1,6 @@
 # Proof-gated XRPL escrow, step by step
 
-Goal: a buyer locks XRP so the seller gets it **only after** a private condition is proven on Midnight. Nobody, including CorvusZK, ever holds the funds.
+Goal: a buyer locks XRP and a trusted policy party releases it to the seller after a private condition is proven on Midnight. XRPL itself checks only the crypto-condition, the destination and the time bounds, not the Midnight proof, so whoever holds the preimage can release early or withhold (the buyer is refunded after `CancelAfter`). Nobody, including CorvusZK, ever holds the funds.
 
 ```
 Buyer wallet ──EscrowCreate(Condition)──▶ XRPL escrow (XRP locked, destination = seller)

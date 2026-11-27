@@ -8,7 +8,7 @@ CorvusZK is a **developer toolkit**, not a bank product and not a custodial wall
 
 Funds never sit with CorvusZK. Secrets and fulfillments stay with the caller.
 
-All four Compact contracts are live on Midnight mainnet (13 Nov 2026). Unaudited. Not for real value. The full eligibility prove → reveal → XRPL EscrowFinish path has been proven on Midnight Preprod + XRPL testnet only. Addresses and explorer links are in the [README deployed-contracts table](../README.md#deployed-contracts).
+All four Compact contracts are live on Midnight mainnet (13 Nov 2026). Unaudited. Not for real value. The eligibility contract already deployed on Midnight mainnet uses the insecure demo issuer and must not be used with real value ([SECURITY-NOTICE.md](../SECURITY-NOTICE.md)). The full eligibility prove → reveal → XRPL EscrowFinish path has been proven on Midnight Preprod + XRPL testnet only. Addresses and explorer links are in the [README deployed-contracts table](../README.md#deployed-contracts).
 
 ## Pick a backend
 

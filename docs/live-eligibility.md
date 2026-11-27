@@ -2,8 +2,8 @@
 
 `npm run live:eligibility` does one fresh run:
 
-1. The destination samples the XRPL preimage (`PREIMAGE_MODE=payer` selects the payer instead).
-2. The payer submits XRPL testnet `EscrowCreate` with that condition. The payer is not given the preimage.
+1. The payer-side policy party samples the XRPL preimage (`PREIMAGE_MODE=destination` selects the destination instead, as in the recorded run).
+2. The payer submits XRPL testnet `EscrowCreate` with that condition.
 3. `MidnightBackend.deployEligibility` deploys `contracts/eligibility.compact` on Midnight Preprod.
 4. `callEligibility({ circuit: 'prove' })` then `callEligibility({ circuit: 'reveal' })`.
 5. `readEligibilityState` waits until the indexer shows `preimageRevealed`.
@@ -35,7 +35,7 @@ Health check: `curl -s http://localhost:6300/` should return JSON with `"status"
 export BLOCKFROST_MIDNIGHT_PREPROD=…   # do not commit this
 export MIDNIGHT_PROOF_SERVER=http://localhost:6300   # optional; this is the default
 # optional:
-# export PREIMAGE_MODE=destination     # default. Use payer to sample as the payer.
+# export PREIMAGE_MODE=destination     # default is payer. destination reproduces the recorded run.
 # export MN_SYNC_TIMEOUT_MS=90000
 # export ELIGIBILITY_INDEXER_WAIT_MS=180000
 # export XRPL_ESCROW_XRP=20
@@ -50,4 +50,4 @@ XRPL `feeDrops` / `feeXrp` are the `Fee` field on that submit receipt, when the 
 
 ## Trust for this command
 
-`PREIMAGE_MODE=destination` (default): trust the destination not to finish the escrow before the proof. The payer cannot. `PREIMAGE_MODE=payer`: trust the payer not to finish before the proof. The destination cannot, unless the payer shares the preimage. Details are in the README security model.
+`PREIMAGE_MODE=payer` (default): trust the payer-side policy party to release only after the proof. Early release pays the fixed destination; withholding ends in a refund after `CancelAfter`. The destination cannot finish, unless the preimage is shared. `PREIMAGE_MODE=destination`: trust the destination not to finish before the proof (it could pay itself without one). Details are in the README security model.

@@ -76,6 +76,7 @@
     "README.md",
     "LICENSE",
     "SECURITY.md",
+    "SECURITY-NOTICE.md",
     "package.json",
     "tsconfig.json"
   ]

@@ -11,6 +11,8 @@
 
 *Built on [Midnight](https://midnight.network) (Compact, Midnight.js, proof server) and the [XRP Ledger](https://xrpl.org). Midnight Buildathon Wave 3 entry.* All four contracts are live on Midnight mainnet (13 Nov 2026). The full eligibility + XRPL escrow release path (prove, reveal, and EscrowFinish) has been proven on Midnight Preprod + XRPL testnet. Unaudited. Not for real value. Not affiliated with the Midnight Foundation, Ripple, or the XRPL Foundation.
 
+> **Security notice (26 Nov 2026):** The eligibility contract already deployed on Midnight mainnet (13 Nov 2026) uses the insecure demo issuer and must not be used with real value. Anyone who holds one demo credential can recover the issuer's signing key. There is no known real-value use. Details: [SECURITY-NOTICE.md](SECURITY-NOTICE.md).
+
 ## Judge quick-start (5 minutes)
 
 1. **See it run (1 min, nothing to install).** [corvuszk.com/demo](https://corvuszk.com/demo/) steps through the live run of 12 Nov 2026 (ledger 9): XRPL escrow locked → eligibility contract deployed on Midnight Preprod → private `prove` → `reveal` → XRPL escrow released. Every step links to the public explorer. A [72-second video](https://corvuszk.com/) is on the homepage. The demo page is a replay of that recorded run, not a live wallet connection.
@@ -53,7 +55,7 @@ Preprod records are on **Midnight Preprod, ledger 9** (testnet, free test tokens
 | **Mainnet** | `condition` | [`18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a`](https://www.midnightexplorer.com/contracts/18c57f073a57731fe6b9dac69f3604ebc7a4d0a6710ac99970d804a1ae6b470a) | [`attest`](https://www.midnightexplorer.com/transactions/53d53013bad4e36eda2531177ada92fb925b8cb86732b0de1d85def75ab633c4) | 13 Nov 2026 |
 | **Mainnet** | `age_over` | [`7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc`](https://www.midnightexplorer.com/contracts/7ac8e54d2fa8bf577bf3b6caa9e5f68de332e04264cf9f2a2a33f5fa6f785dfc) | [`prove`](https://www.midnightexplorer.com/transactions/83228532a1386132a1a8c8ea532b1f38d4283dd6d2ea4b437fdbf0da066e0bc0) | 13 Nov 2026 |
 | **Mainnet** | `balance_above` | [`8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0`](https://www.midnightexplorer.com/contracts/8e58143e993fad1400a409192199dd4eb742acfedec4f96e17199039049b05e0) | [`prove`](https://www.midnightexplorer.com/transactions/44e9e0c63348d309d68d8edac164a0f9b744326ccd4e42e49c887df6585c790f) | 13 Nov 2026 |
-| **Mainnet** | `eligibility` (demonstration instance; mock issuer, no real XRPL escrow, no `reveal`) | [`8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3`](https://www.midnightexplorer.com/contracts/8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3) | [`prove`](https://www.midnightexplorer.com/transactions/222476605d263d66a7856888d1cc8dcba26315d5c7677c5b73cd248fbed0a776) | 13 Nov 2026 |
+| **Mainnet** | `eligibility` (insecure demo issuer; must not be used with real value; no real XRPL escrow, no `reveal`) | [`8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3`](https://www.midnightexplorer.com/contracts/8990d6387c095310a91d83ef47f2d3019023f6077a4f50526faf4b23aa148ad3) | [`prove`](https://www.midnightexplorer.com/transactions/222476605d263d66a7856888d1cc8dcba26315d5c7677c5b73cd248fbed0a776) | 13 Nov 2026 |
 
 XRPL testnet side of the 12 Nov run: [`EscrowCreate`](https://testnet.xrpl.org/transactions/593F1F56ED7AD8FB7C4C4DF7D78EF2DE41AC3DE085DC476BC30B348F350FAB41) (20 test XRP) and [`EscrowFinish`](https://testnet.xrpl.org/transactions/194F5D8FD89AFF3E95ACC7A140D2ED2AB6129EA7E6A73A2C7A2A0BAE6634354C) (`tesSUCCESS`), about 88 seconds apart. Older ledger 8 records (3–6 Nov 2026) are kept under `ledger8History` in the deployments file and in [docs/live-run.md](docs/live-run.md).
 
@@ -75,16 +77,16 @@ flowchart LR
     R["reveal(): only after prove(),<br/>publish the release preimage"]
   end
   Payer["Payer wallet"] --> E1
-  Dest["Destination / policy party<br/>samples the preimage"] -->|"commitment only"| C
-  Dest -->|"condition only"| Payer
-  W --> PS -->|"zk proof, no private data"| P
+  Policy["Payer-side policy party<br/>samples the preimage (default)"] -->|"commitment only"| C
+  Policy -->|"condition only"| Payer
+  W --> PS -->|"proof transaction, no private data"| P
   C --> P --> R
   R -->|"indexer read"| SDK["CorvusZK SDK<br/>fulfillmentFromRevealedLedger"]
   SDK --> E2
   E1 -.->|"same condition"| E2
 ```
 
-The payer never receives the preimage, so the payer cannot release early. XRPL does not read Midnight: the link is the crypto-condition. The destination, who sampled the preimage, could finish without Midnight and must be trusted not to. Details: [Security model](#security-model).
+By default the payer-side policy party samples the preimage. It can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. XRPL does not read Midnight: the link is the crypto-condition. Release is not trustless. Details: [Security model](#security-model).
 
 ### Private vs public state (Midnight's two ledgers)
 
@@ -108,7 +110,7 @@ Midnight splits each contract into private state, kept on the user's machine and
 | Tests | Offline suites (SDK units, eligibility circuit, simulator tests for all four contracts) run in CI. The live XRPL testnet escrow test runs as a separate best-effort CI job because it depends on the public faucet. CI does not run live Midnight transactions (that needs a funded wallet and a proof server). |
 | `MidnightBackend` (SDK) | Runs the compiled circuits locally (`local-circuits`), attaches Preprod addresses (`preprod`), posts a Preprod `callTx` (`submitOnChain`), and deploys / calls / reads eligibility instances. |
 | `LocalSimulationBackend` | Ed25519-signed attestation for learning the API offline. **Not zero-knowledge.** |
-| Midnight mainnet | **Live for all four contracts** on 13 Nov 2026. `condition`, `age_over`, and `balance_above` each have one proof call. Addresses and explorer links are in the table above and in [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json). An `eligibility` demonstration instance was deployed later the same day with one `prove` call (mock issuer, placeholder XRPL accounts, no real escrow, no `reveal`). Unaudited. Not for real value. |
+| Midnight mainnet | **Live for all four contracts** on 13 Nov 2026. `condition`, `age_over`, and `balance_above` each have one proof call. Addresses and explorer links are in the table above and in [`midnight/deployments.mainnet.json`](midnight/deployments.mainnet.json). An `eligibility` instance was deployed later the same day with one `prove` call (placeholder XRPL accounts, no real escrow, no `reveal`). **That mainnet eligibility contract uses the insecure demo issuer and must not be used with real value.** See [SECURITY-NOTICE.md](SECURITY-NOTICE.md). Unaudited. |
 | Frontend | [corvuszk.com/demo](https://corvuszk.com/demo/) replays the 12 Nov run with explorer links and live XRPL lookups. A wallet-connected live page is not built yet. |
 | Users / revenue | None yet. |
 
@@ -117,16 +119,16 @@ Midnight splits each contract into private state, kept on the user's machine and
 Short version. The full write-up, with tables for each check and replay case, is in [docs/security-model.md](docs/security-model.md).
 
 - **How the chains connect.** The XRPL escrow condition is SHA-256 of a 32-byte preimage. The eligibility contract stores a commitment to that preimage (not the preimage), plus the escrow's owner, sequence and destination. `prove()` checks the mock issuer's Schnorr signature in-circuit and records a one-time nullifier bound to that escrow. `reveal()` only works after `prove()` and only for the committed preimage. The SDK then rebuilds the XRPL fulfillment from the revealed ledger state.
-- **What XRPL enforces.** Only the crypto-condition and the fixed destination. XRPL does not verify the Midnight proof. The party who sampled the preimage (the destination, in the default mode) can finish without Midnight and must be trusted not to. The payer never sees the preimage and cannot finish early.
+- **What XRPL enforces.** Only the crypto-condition, the fixed destination and the time bounds. XRPL does not verify the Midnight proof. CorvusZK runs in **trusted policy party** mode: the party that sampled the preimage (by default the payer-side policy party) can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. It must be trusted to release only after the proof. Release is not trustless.
 - **Replay.** A second `prove()` or `reveal()` on the same contract fails. The nullifier changes with owner, sequence, destination or preimage commitment. There is no cross-contract nullifier registry.
 - **Privacy limits.** XRPL amount, accounts and timing stay public. After `reveal()`, the preimage is public.
-- **Other limits.** Mock issuer only. 96-bit demo scalars. Unaudited. Not for real value. The eligibility + XRPL escrow path has been proven on testnet only.
+- **Other limits.** The demo issuer's signature is not secure (see [SECURITY-NOTICE.md](SECURITY-NOTICE.md)). Unaudited. Not for real value. The eligibility + XRPL escrow path has been proven on testnet only.
 
 ## Who it is for
 
 TypeScript builders shipping small XRPL apps that need a private yes/no before releasing escrowed XRP: age-gated goods, proof-of-funds style checks, "condition met" attestations, without becoming a custodial wallet. Why Midnight: XRPL has native escrow but no private programmable checks; Midnight's Compact contracts add those without moving the money off XRPL. Comparisons with XRPL Credentials, Xahau Hooks, Boundless Smart Escrows and other Midnight projects, plus fee notes, are in [docs/alternatives-and-costs.md](docs/alternatives-and-costs.md).
 
-Docs: [getting started](docs/getting-started.md) · [what's included](WHAT-YOU-GET.md) · [the proof templates](docs/templates.md) · [XRPL escrow flow](docs/xrpl-escrow-flow.md) · [live eligibility run how-to](docs/live-eligibility.md) · [on-chain submit](docs/on-chain-submit.md) · [proof server](docs/proof-server.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG](CHANGELOG.md)
+Docs: [security notice](SECURITY-NOTICE.md) · [getting started](docs/getting-started.md) · [what's included](WHAT-YOU-GET.md) · [the proof templates](docs/templates.md) · [XRPL escrow flow](docs/xrpl-escrow-flow.md) · [live eligibility run how-to](docs/live-eligibility.md) · [on-chain submit](docs/on-chain-submit.md) · [proof server](docs/proof-server.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG](CHANGELOG.md)
 
 ## Use it in your app
 

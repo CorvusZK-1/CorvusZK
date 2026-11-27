@@ -10,8 +10,8 @@ Who samples the preimage is a mode:
 
 | Mode | Who may hold the preimage before `reveal()` | Who must be trusted not to finish early |
 |---|---|---|
-| `payer` (`createBoundPreimage()`, `samplePreimage('payer')`) | The payer. `publicTerms` still omits the preimage, but the payer's `holder` object has it. | The payer. The destination cannot finish until reveal, unless the payer shares the preimage. |
-| `destination` (`samplePreimage('destination')`, the default of `npm run live:eligibility`) | The destination (policy party). `payerFacingTerms()` returns only the condition and the commitment. | The destination. The payer cannot finish early, because they never receive the preimage. |
+| `payer` (`createBoundPreimage()`, `samplePreimage()` / `samplePreimage('payer')`, the default of `npm run live:eligibility`) | The payer. `publicTerms` still omits the preimage, but the payer's `holder` object has it. | The payer. The destination cannot finish until reveal, unless the payer shares the preimage. |
+| `destination` (`samplePreimage('destination')`, `PREIMAGE_MODE=destination`; used for the recorded 12 Nov run) | The destination (policy party). `payerFacingTerms()` returns only the condition and the commitment. | The destination. The payer cannot finish early, because they never receive the preimage. |
 
 In both modes the sampler can submit `EscrowFinish` before any Midnight proof. XRPL will accept a correct preimage. After `reveal()`, the preimage is public and anyone can finish; the destination is still the one fixed in `EscrowCreate`. The machine that submits `reveal()` also sees the preimage as a witness, which is after `prove()` has succeeded.
 
@@ -31,7 +31,7 @@ XRPL links the two systems only through the crypto-condition. A Midnight contrac
 | Original three predicates | `MidnightBackend` via compiled circuits, or `LocalSimulationBackend` via an Ed25519 signature | Application. `submitOnChain` can also post a Preprod call for those three. |
 | EscrowFinish fulfillment | XRPL | The ledger checks the preimage against the condition. It does not read Midnight. |
 
-The eligibility signature is Schnorr on Compact's embedded curve, 96-bit scalars, challenge = first 12 bytes of `persistentHash` over the credential type, subject commitment, expiry, nonce point, and issuer point. It is not an XRPL transaction signature and not an XLS-70 credential signature.
+The eligibility signature is Schnorr on Compact's embedded curve, 96-bit scalars, challenge = first 12 bytes of `persistentHash` over the credential type, subject commitment, expiry, nonce point, and issuer point. It is not an XRPL transaction signature and not an XLS-70 credential signature. **This signature is not secure:** a holder of one credential can recover the issuer key. Do not use it with real value. The eligibility contract already deployed on Midnight mainnet (13 Nov 2026) uses this insecure demo issuer. See [SECURITY-NOTICE.md](../SECURITY-NOTICE.md).
 
 `LocalSimulationBackend` sets `zk: false`. Treat a local eligibility run the same way for evidence: the constraints ran, a zero-knowledge proof was not produced.
 
