@@ -29,9 +29,40 @@ export type PrivateWitness =
   | { kind: 'balanceAbove'; balance: number; salt: string | Uint8Array }
   | { kind: 'ageOver'; birthYear: number; salt: string | Uint8Array };
 
+/**
+ * What kind of evidence a Proof object carries. These are different guarantees:
+ * - `simulation-attestation`: a local process checked the predicate in plain code and signed it. Not ZK.
+ * - `local-circuit-evaluation`: the compiled Compact circuit ran on this machine (compact-runtime).
+ *   Constraints were checked, but no zero-knowledge proof was produced or verified.
+ * - `chain-transaction-reported`: our own submitter reports that a Midnight transaction was accepted.
+ *   The node verified a ZK proof for that transaction, but this SDK has not independently checked it.
+ * - `verified-chain-evidence`: chain state was independently checked against trusted policy
+ *   configuration (see MidnightBackend.verifyStrict). Only this kind may be treated as ZK evidence.
+ */
+export type EvidenceKind =
+  | 'simulation-attestation'
+  | 'local-circuit-evaluation'
+  | 'chain-transaction-reported'
+  | 'verified-chain-evidence';
+export const EVIDENCE_KINDS: readonly EvidenceKind[] = [
+  'simulation-attestation',
+  'local-circuit-evaluation',
+  'chain-transaction-reported',
+  'verified-chain-evidence',
+];
+
+/** Upper bound for an attestation string; larger inputs are rejected before parsing. */
+export const MAX_ATTESTATION_BYTES = 64 * 1024;
+
 export interface Proof {
   claim: Claim;
   backend: 'local-simulation' | 'midnight';
+  /** Explicit evidence kind. Check this, not `zk`. */
+  evidence: EvidenceKind;
+  /**
+   * @deprecated Use `evidence`. True only when `evidence === 'verified-chain-evidence'`.
+   * Local runs (simulation or compact-runtime) always set `zk: false`.
+   */
   zk: boolean;
   attestation: string;
   signerPublicKey: string;
@@ -126,8 +157,25 @@ export function commit(value: string | number, salt: string): string {
 }
 const claimBytes = (c: Claim) => Buffer.from(JSON.stringify(c));
 
+/** True only for evidence that was independently verified against trusted chain configuration. */
+export function isVerifiedChainEvidence(p: Pick<Proof, 'evidence' | 'zk'> | null | undefined): boolean {
+  return !!p && p.evidence === 'verified-chain-evidence';
+}
+
+function wellFormedProof(p: unknown): p is Proof {
+  if (!p || typeof p !== 'object') return false;
+  const q = p as Partial<Proof>;
+  if (typeof q.attestation !== 'string' || q.attestation.length > MAX_ATTESTATION_BYTES) return false;
+  if (typeof q.signerPublicKey !== 'string' || !q.claim || typeof q.claim !== 'object') return false;
+  if (!EVIDENCE_KINDS.includes(q.evidence as EvidenceKind)) return false;
+  // `zk` may only be true together with verified chain evidence.
+  if (q.zk !== (q.evidence === 'verified-chain-evidence')) return false;
+  return true;
+}
+
 type MidnightAttestation = {
   v: 1;
+  evidence: EvidenceKind;
   mode: 'local-circuits' | 'preprod';
   template: string;
   circuit: string;
@@ -149,6 +197,7 @@ export class LocalSimulationBackend implements ProofBackend {
     return {
       claim,
       backend: this.name,
+      evidence: 'simulation-attestation',
       zk: false,
       attestation,
       signerPublicKey: this.publicKey,
@@ -156,6 +205,7 @@ export class LocalSimulationBackend implements ProofBackend {
     };
   }
   async verify(p: Proof): Promise<boolean> {
+    if (!wellFormedProof(p) || p.evidence !== 'simulation-attestation') return false;
     if (p.backend !== this.name || p.signerPublicKey !== this.publicKey) return false;
     const pub = crypto.createPublicKey({
       key: Buffer.from(p.signerPublicKey, 'hex'),
@@ -330,6 +380,7 @@ export class MidnightBackend implements ProofBackend {
 
     const attestation = this.signAttestation({
       v: 1,
+      evidence: 'local-circuit-evaluation',
       mode: this.opts.mode ?? 'local-circuits',
       template: result.template,
       circuit: result.circuit,
@@ -341,7 +392,9 @@ export class MidnightBackend implements ProofBackend {
     return {
       claim: outClaim,
       backend: this.name,
-      zk: true,
+      // Local compact-runtime execution: constraints checked, no ZK proof produced (CZ-001).
+      evidence: 'local-circuit-evaluation',
+      zk: false,
       attestation,
       signerPublicKey: this.publicKey,
       createdAt: Date.now(),
@@ -350,9 +403,13 @@ export class MidnightBackend implements ProofBackend {
 
   async verify(proof: Proof): Promise<boolean> {
     this.requireConfig();
+    if (!wellFormedProof(proof)) return false;
     if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey) return false;
     const att = this.parseAttestation(proof.attestation);
     if (!att || att.v !== 1 || !att.sig || !att.transcriptHex) return false;
+    // The evidence kind is signed; the outer label must match it.
+    if (att.evidence !== proof.evidence) return false;
+    if (att.evidence !== 'local-circuit-evaluation' && att.evidence !== 'chain-transaction-reported') return false;
     const { sig, ...body } = att;
     const pub = crypto.createPublicKey({
       key: Buffer.from(proof.signerPublicKey, 'hex'),
@@ -447,12 +504,15 @@ export class MidnightBackend implements ProofBackend {
       const { sig: _s, ...body } = att;
       const enriched = this.signAttestation({
         ...body,
+        evidence: 'chain-transaction-reported',
         mode: 'preprod',
         contractAddress: submitted.contractAddress,
         onChainTxHash: submitted.txHash,
         onChainTxId: submitted.txId,
       });
       local.attestation = enriched;
+      local.evidence = 'chain-transaction-reported';
+      local.zk = false;
     }
     return { ...submitted, proof: local };
   }

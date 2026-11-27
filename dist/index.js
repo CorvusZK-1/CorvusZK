@@ -17,12 +17,39 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as xrpl from 'xrpl';
 import cc from 'five-bells-condition';
 import { preprodConfig } from './midnight-config.js';
+export const EVIDENCE_KINDS = [
+    'simulation-attestation',
+    'local-circuit-evaluation',
+    'chain-transaction-reported',
+    'verified-chain-evidence',
+];
+/** Upper bound for an attestation string; larger inputs are rejected before parsing. */
+export const MAX_ATTESTATION_BYTES = 64 * 1024;
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 /** Hiding commitment to a private value: sha256(salt || value). */
 export function commit(value, salt) {
     return sha256(`${salt}|${value}`);
 }
 const claimBytes = (c) => Buffer.from(JSON.stringify(c));
+/** True only for evidence that was independently verified against trusted chain configuration. */
+export function isVerifiedChainEvidence(p) {
+    return !!p && p.evidence === 'verified-chain-evidence';
+}
+function wellFormedProof(p) {
+    if (!p || typeof p !== 'object')
+        return false;
+    const q = p;
+    if (typeof q.attestation !== 'string' || q.attestation.length > MAX_ATTESTATION_BYTES)
+        return false;
+    if (typeof q.signerPublicKey !== 'string' || !q.claim || typeof q.claim !== 'object')
+        return false;
+    if (!EVIDENCE_KINDS.includes(q.evidence))
+        return false;
+    // `zk` may only be true together with verified chain evidence.
+    if (q.zk !== (q.evidence === 'verified-chain-evidence'))
+        return false;
+    return true;
+}
 export class LocalSimulationBackend {
     name = 'local-simulation';
     key = crypto.generateKeyPairSync('ed25519');
@@ -34,6 +61,7 @@ export class LocalSimulationBackend {
         return {
             claim,
             backend: this.name,
+            evidence: 'simulation-attestation',
             zk: false,
             attestation,
             signerPublicKey: this.publicKey,
@@ -41,6 +69,8 @@ export class LocalSimulationBackend {
         };
     }
     async verify(p) {
+        if (!wellFormedProof(p) || p.evidence !== 'simulation-attestation')
+            return false;
         if (p.backend !== this.name || p.signerPublicKey !== this.publicKey)
             return false;
         const pub = crypto.createPublicKey({
@@ -192,6 +222,7 @@ export class MidnightBackend {
                 };
         const attestation = this.signAttestation({
             v: 1,
+            evidence: 'local-circuit-evaluation',
             mode: this.opts.mode ?? 'local-circuits',
             template: result.template,
             circuit: result.circuit,
@@ -202,7 +233,9 @@ export class MidnightBackend {
         return {
             claim: outClaim,
             backend: this.name,
-            zk: true,
+            // Local compact-runtime execution: constraints checked, no ZK proof produced (CZ-001).
+            evidence: 'local-circuit-evaluation',
+            zk: false,
             attestation,
             signerPublicKey: this.publicKey,
             createdAt: Date.now(),
@@ -210,10 +243,17 @@ export class MidnightBackend {
     }
     async verify(proof) {
         this.requireConfig();
+        if (!wellFormedProof(proof))
+            return false;
         if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey)
             return false;
         const att = this.parseAttestation(proof.attestation);
         if (!att || att.v !== 1 || !att.sig || !att.transcriptHex)
+            return false;
+        // The evidence kind is signed; the outer label must match it.
+        if (att.evidence !== proof.evidence)
+            return false;
+        if (att.evidence !== 'local-circuit-evaluation' && att.evidence !== 'chain-transaction-reported')
             return false;
         const { sig, ...body } = att;
         const pub = crypto.createPublicKey({
@@ -302,12 +342,15 @@ export class MidnightBackend {
             const { sig: _s, ...body } = att;
             const enriched = this.signAttestation({
                 ...body,
+                evidence: 'chain-transaction-reported',
                 mode: 'preprod',
                 contractAddress: submitted.contractAddress,
                 onChainTxHash: submitted.txHash,
                 onChainTxId: submitted.txId,
             });
             local.attestation = enriched;
+            local.evidence = 'chain-transaction-reported';
+            local.zk = false;
         }
         return { ...submitted, proof: local };
     }

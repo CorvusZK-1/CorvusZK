@@ -34,7 +34,7 @@ const preprodBackend = (extra) =>
 
 if (bridge) {
   // ---------------- CZ-001 ----------------
-  test('CZ-001: a local-circuits run must not claim zero-knowledge evidence', { todo: 'CZ-001 (PR-2)' }, async () => {
+  test('CZ-001: a local-circuits run must not claim zero-knowledge evidence', async () => {
     const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits', proofServer: 'http://127.0.0.1:1' });
     const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
     assert.notEqual(p.zk, true);
@@ -98,3 +98,25 @@ if (bridge) {
     assert.throws(() => elig.encodeAccountId('11'.repeat(32)));
   });
 }
+
+// ---------------- CZ-001 (evidence kinds) ----------------
+test('CZ-001: every backend labels its evidence kind; only verified chain evidence may set zk', async () => {
+  const sim = new k.LocalSimulationBackend();
+  const p = await k.proveAgeOver(sim, 1990, 18, 2026, 's');
+  assert.equal(p.evidence, 'simulation-attestation');
+  assert.equal(p.zk, false);
+  assert.equal(k.isVerifiedChainEvidence(p), false);
+  // Relabelling a simulation proof as chain evidence must not verify.
+  const forged = { ...p, evidence: 'verified-chain-evidence', zk: true };
+  assert.equal(await sim.verify(forged), false);
+});
+test('CZ-001: unknown, malformed and oversized evidence is rejected', async () => {
+  const b = new k.MidnightBackend({ blockfrostProjectId: TOKEN, mode: 'local-circuits', bridge: { proveLocal: okLocal } });
+  const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
+  assert.equal(await b.verify(p), true);
+  assert.equal(await b.verify({ ...p, evidence: 'something-new' }), false);
+  assert.equal(await b.verify({ ...p, evidence: 'verified-chain-evidence', zk: true }), false);
+  assert.equal(await b.verify({ ...p, attestation: 'not base64 json' }), false);
+  assert.equal(await b.verify({ ...p, attestation: 'A'.repeat(300_000) }), false);
+  assert.equal(await b.verify(null), false);
+});

@@ -48,7 +48,8 @@ test('MidnightBackend local-circuits prove/verify (stub bridge, no network)', as
   const b = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', mode: 'local-circuits', bridge: stubBridge() });
   const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
   assert.equal(p.backend, 'midnight');
-  assert.equal(p.zk, true);
+  assert.equal(p.zk, false); // CZ-001: local runs never claim ZK
+  assert.equal(p.evidence, 'local-circuit-evaluation');
   assert.ok(await b.verify(p));
   await assert.rejects(k.proveAgeOver(b, 2012, 18, 2026, 'salt'));
 });
@@ -56,7 +57,8 @@ test('MidnightBackend local-circuits prove/verify (stub bridge, no network)', as
 test('MidnightBackend no longer throws deploy-wiring stub once configured', async () => {
   const b = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', bridge: stubBridge() });
   const p = await k.proveBalanceAbove(b, 5000, 1000, 'salt');
-  assert.equal(p.zk, true);
+  assert.equal(p.zk, false); // CZ-001: local runs never claim ZK
+  assert.equal(p.evidence, 'local-circuit-evaluation');
   assert.doesNotMatch(p.attestation ?? '', /run midnight\/deploy\.mjs/);
   assert.ok(await b.verify(p));
 });
@@ -64,7 +66,8 @@ test('MidnightBackend no longer throws deploy-wiring stub once configured', asyn
 test('MidnightBackend preprod mode attaches contract address from deployments', async () => {
   const b = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', mode: 'preprod', bridge: stubBridge() });
   const p = await k.proveCondition(b, 'delivered', 'salt', k.commit('delivered', 'salt'));
-  assert.equal(p.zk, true);
+  assert.equal(p.zk, false); // CZ-001: local runs never claim ZK
+  assert.equal(p.evidence, 'local-circuit-evaluation');
   const att = JSON.parse(Buffer.from(p.attestation, 'base64url').toString('utf8'));
   assert.equal(att.contractAddress, '45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5');
   assert.ok(await b.verify(p));
@@ -81,7 +84,8 @@ test('MidnightBackend.submitOnChain uses bridge submitCallTx (mocked, no network
   assert.equal(out.circuit, 'prove');
   assert.equal(out.contractAddress, '3458e15536314cd6ed68d20aecec14c66f3d786ad09a871cf057949170ec2367');
   assert.equal(out.txHash, 'aabb'.repeat(16));
-  assert.equal(out.proof.zk, true);
+  assert.equal(out.proof.zk, false); // CZ-001: our own submit report is not independent verification
+  assert.equal(out.proof.evidence, 'chain-transaction-reported');
   const att = JSON.parse(Buffer.from(out.proof.attestation, 'base64url').toString('utf8'));
   assert.equal(att.onChainTxHash, out.txHash);
   assert.ok(await b.verify(out.proof));
