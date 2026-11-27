@@ -146,6 +146,8 @@ export type MidnightBackendOpts = {
 export declare function commit(value: string | number, salt: string): string;
 /** True only for evidence that was independently verified against trusted chain configuration. */
 export declare function isVerifiedChainEvidence(p: Pick<Proof, 'evidence' | 'zk'> | null | undefined): boolean;
+/** Deterministic JSON (sorted keys) for signing and comparing claims. */
+export declare function canonicalJson(v: unknown): string;
 export declare class LocalSimulationBackend implements ProofBackend {
     name: 'local-simulation';
     private key;
