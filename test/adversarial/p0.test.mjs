@@ -73,7 +73,7 @@ if (bridge) {
   }
 
   // ---------------- CZ-003 (e) ----------------
-  test('CZ-003f: releaser refuses a contract deployed with an unexpected issuer', { todo: 'CZ-003e (PR-5a)' }, async () => {
+  test('CZ-003f: releaser refuses a contract deployed with an unexpected issuer', async () => {
     const OWNER = Buffer.alloc(20, 0x11), DEST = Buffer.alloc(20, 0x22);
     const escrow = { owner: OWNER, offerSequence: 17, destination: DEST };
     const expectedIssuer = elig.createMockIssuer();
@@ -94,7 +94,7 @@ if (bridge) {
   });
 
   // ---------------- CZ-008 (canonical encoding) ----------------
-  test('CZ-008b: account ids with non-zero padding are refused', { todo: 'CZ-008b (PR-5a)' }, () => {
+  test('CZ-008b: account ids with non-zero padding are refused', () => {
     assert.throws(() => elig.encodeAccountId(Buffer.alloc(32, 0x11)));
     assert.throws(() => elig.encodeAccountId('11'.repeat(32)));
   });
@@ -207,5 +207,28 @@ if (bridge) {
     assert.equal(none.artifactMatch, null);
     const missing = await bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: { queryContractState: async () => null } });
     assert.equal(missing.found, false);
+  });
+}
+
+// ---------------- CZ-003 (e): releaser must check the expected policy ----------------
+if (elig) {
+  test('CZ-003e: releaser requires and checks expected issuer, credential type and asOf', async () => {
+    const OWNER = Buffer.alloc(20, 0x11), DEST = Buffer.alloc(20, 0x22);
+    const escrow = { owner: OWNER, offerSequence: 17, destination: DEST };
+    const issuer = elig.createMockIssuer();
+    const holderSecret = new Uint8Array(crypto.randomBytes(32));
+    const cred = elig.issueMockCredential(issuer, { holderSecret, credentialType: 'kyc-pass', expiry: 1_800_000_000n });
+    const b = elig.createBoundPreimage();
+    const r = await elig.runEligibility({ issuer, credential: cred, holderSecret, asOf: 1_700_000_000n, preimageCommit: b.preimageCommit, escrow, reveal: true, releasePreimage: b.preimage });
+    const good = { ...escrow, condition: b.condition, issuer: issuer.publicKey, credentialType: 'kyc-pass', asOf: 1_700_000_000n };
+    assert.equal(elig.fulfillmentFromRevealedLedger(r.rawLedger, good).fulfillment, b.fulfillment);
+    assert.throws(() => elig.fulfillmentFromRevealedLedger(r.rawLedger, { ...good, issuer: undefined }), /issuer/);
+    assert.throws(() => elig.fulfillmentFromRevealedLedger(r.rawLedger, { ...good, credentialType: undefined }), /credential type/);
+    assert.throws(() => elig.fulfillmentFromRevealedLedger(r.rawLedger, { ...good, asOf: undefined }), /asOf/);
+    assert.throws(() => elig.fulfillmentFromRevealedLedger(r.rawLedger, { ...good, credentialType: 'accredited' }), /credential type/);
+    assert.throws(() => elig.fulfillmentFromRevealedLedger(r.rawLedger, { ...good, asOf: 1n }), /asOf/);
+    // Canonical 32-byte account ids (20 bytes + 12 zero bytes) are still accepted.
+    const padded = Buffer.alloc(32); OWNER.copy(padded);
+    assert.ok(elig.bytesEqual(elig.encodeAccountId(padded), elig.encodeAccountId(OWNER)));
   });
 }

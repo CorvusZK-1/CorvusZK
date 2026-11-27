@@ -86,7 +86,11 @@ export function encodeAccountId(account) {
   } else {
     raw = Buffer.from(account);
   }
-  if (raw.length === 32) return new Uint8Array(raw);
+  if (raw.length === 32) {
+    // Canonical form only: 20-byte account id, then 12 zero bytes (CZ-008).
+    if (!raw.subarray(20).every((b) => b === 0)) throw new Error('account id: 32-byte form must end in 12 zero bytes');
+    return new Uint8Array(raw);
+  }
   if (raw.length !== 20) throw new Error('account id must be 20 bytes or a classic address');
   const out = Buffer.alloc(32);
   raw.copy(out, 0);
@@ -398,13 +402,29 @@ export function publicLedger(ledger) {
   };
 }
 
+function toBigIntField(v, name) {
+  if (typeof v === 'bigint') return v;
+  if (typeof v === 'number' && Number.isSafeInteger(v)) return BigInt(v);
+  if (typeof v === 'string' && /^(0x)?[0-9a-fA-F]+$/.test(v)) return BigInt(v.startsWith('0x') ? v : '0x' + v);
+  throw new Error(`${name}: expected bigint or hex string`);
+}
+
 /**
  * Releaser path. Builds the XRPL fulfillment from contract state.
  * Refuses unless prove() and reveal() have both succeeded, the revealed
  * preimage matches the commitment, and the caller names the same owner,
- * offer sequence, destination, and condition stored on that contract.
+ * offer sequence, destination, and condition stored on that contract, and
+ * the same issuer public key, credential type and asOf the releaser's own
+ * policy expects (CZ-003e). These expectations come from the releaser's
+ * configuration, never from the contract being checked.
+ * @param {object} expected { owner, offerSequence, destination, condition, issuer:{x,y}, credentialType, asOf }
  */
 export function fulfillmentFromRevealedLedger(ledger, expected) {
+  if (!expected?.issuer || expected.issuer.x == null || expected.issuer.y == null) {
+    throw new Error('expected issuer public key is required; refusing to derive the XRPL fulfillment');
+  }
+  if (!expected.credentialType) throw new Error('expected credential type is required; refusing to derive the XRPL fulfillment');
+  if (expected.asOf == null) throw new Error('expected asOf is required; refusing to derive the XRPL fulfillment');
   if (!ledger || ledger.proven !== true) {
     throw new Error('eligibility not proven; refusing to derive the XRPL fulfillment');
   }
@@ -413,6 +433,17 @@ export function fulfillmentFromRevealedLedger(ledger, expected) {
   }
   if (!ledger.nullifier || Buffer.from(ledger.nullifier).every((b) => b === 0)) {
     throw new Error('escrow nullifier is missing; refusing to derive the XRPL fulfillment');
+  }
+  const ix = toBigIntField(expected.issuer.x, 'issuer.x');
+  const iy = toBigIntField(expected.issuer.y, 'issuer.y');
+  if (BigInt(ledger.issuerX) !== ix || BigInt(ledger.issuerY) !== iy) {
+    throw new Error('issuer public key on the contract is not the expected issuer');
+  }
+  if (!equalBytes(ledger.credentialType, pad32(expected.credentialType))) {
+    throw new Error('credential type on the contract is not the expected credential type');
+  }
+  if (BigInt(ledger.asOf) !== BigInt(expected.asOf)) {
+    throw new Error('asOf on the contract is not the expected asOf');
   }
   const binding = encodeEscrowBinding(expected);
   if (!equalBytes(ledger.escrowOwner, binding.owner)) {

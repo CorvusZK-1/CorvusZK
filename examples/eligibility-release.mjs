@@ -33,6 +33,8 @@ const credential = elig.issueMockCredential(issuer, {
   expiry,
 });
 const bound = elig.createBoundPreimage();
+// The releaser's own policy: which issuer, credential type and asOf it accepts.
+const releaserPolicy = { issuer: issuer.publicKey, credentialType: 'kyc-pass', asOf };
 const escrow = {
   owner: 'rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe',
   offerSequence: 17,
@@ -49,7 +51,7 @@ const proved = await elig.runEligibility({
 });
 let early = 'refused';
 try {
-  elig.fulfillmentFromRevealedLedger(proved.rawLedger, { ...escrow, condition: bound.condition });
+  elig.fulfillmentFromRevealedLedger(proved.rawLedger, { ...escrow, condition: bound.condition, ...releaserPolicy });
   early = 'UNEXPECTED fulfillment';
 } catch (err) {
   early = err.message;
@@ -65,7 +67,7 @@ const revealed = await elig.runEligibility({
   reveal: true,
   releasePreimage: bound.preimage,
 });
-const rel = elig.fulfillmentFromRevealedLedger(revealed.rawLedger, { ...escrow, condition: bound.condition });
+const rel = elig.fulfillmentFromRevealedLedger(revealed.rawLedger, { ...escrow, condition: bound.condition, ...releaserPolicy });
 
 const view = {
   mockIssuer: credential.label,
