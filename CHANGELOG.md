@@ -2,6 +2,10 @@
 
 All dates are Pacific time. Unaudited. Not for real value. The full eligibility + XRPL escrow release path has been proven on Midnight Preprod + XRPL testnet only.
 
+## Unreleased
+
+- Removed the `five-bells-condition` dependency. PREIMAGE-SHA-256 conditions are now built in (`src/crypto-condition.ts`, node:crypto only) and checked against committed reference vectors and a live XRPL testnet escrow. This drops 10 transitive packages from installs, including an unmaintained native add-on (`ed25519@0.0.4`) with a `node-gyp` install script.
+
 ## 1.1.0 — 27 Nov 2026
 
 - Security fixes from the engineering review (CZ-001 to CZ-004, CZ-008): strict release in trusted policy party mode only, explicit evidence kinds, signed claims, strict Midnight verification, intent binding (IntentV2), one credential per escrow, payer-side default preimage holder. The SDK refuses mainnet release while the demo issuer is in use.

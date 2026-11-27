@@ -19,7 +19,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as rt from '@midnight-ntwrk/compact-runtime';
-import cc from 'five-bells-condition';
+import { preimageSha256 } from '../dist/crypto-condition.js';
 import { decodeAccountID } from 'xrpl';
 
 export const MOCK_ISSUER_LABEL =
@@ -255,13 +255,7 @@ export function issueMockCredential(issuer, o) {
 }
 
 export function xrplConditionFromPreimage(preimage) {
-  const raw = bytes32(preimage);
-  const f = new cc.PreimageSha256();
-  f.setPreimage(Buffer.from(raw));
-  return {
-    condition: f.getConditionBinary().toString('hex').toUpperCase(),
-    fulfillment: f.serializeBinary().toString('hex').toUpperCase(),
-  };
+  return preimageSha256(bytes32(preimage));
 }
 
 const TRUST = {

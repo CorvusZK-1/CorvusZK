@@ -313,8 +313,8 @@ export declare function feesFromMidnightReceipt(pub: {
  *  The bound path is midnight/eligibility.mjs (see README "Security model").
  */
 export declare function createCryptoCondition(): {
-    condition: any;
-    fulfillment: any;
+    condition: string;
+    fulfillment: string;
 };
 export declare function createEscrow(client: xrpl.Client, payer: xrpl.Wallet, o: {
     destination: string;
@@ -361,3 +361,4 @@ export * from './midnight-config.js';
 export * from './intent.js';
 export * from './registry.js';
 export * from './strict-release.js';
+export * from './crypto-condition.js';

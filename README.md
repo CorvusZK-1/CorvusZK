@@ -200,7 +200,7 @@ Docs for chain submit: [on-chain submit](docs/on-chain-submit.md) · [proof serv
 4. For **on-chain submit** against contracts already in `midnight/deployments.preprod.json`: start the proof server (see [docs/proof-server.md](docs/proof-server.md)), ensure the deployer wallet has DUST, then `backend.submitOnChain(...)` or `cd midnight && node submit-onchain.mjs --template age_over`. For a **fresh deploy**, use `midnight/deploy.mjs` / `ensure-pipeline.sh` (longer; registers DUST if needed). Faucet: https://midnight-tmnight-preprod.nethermind.dev/
 
 ## Licence
-Apache-2.0. Dependencies: xrpl.js (ISC), five-bells-condition (Apache-2.0), Compact/Midnight.js (Apache-2.0, optional under `midnight/`). Not affiliated with Ripple, the XRPL Foundation or the Midnight Foundation.
+Apache-2.0. Dependencies: xrpl.js (ISC; its only runtime dependency tree), Compact/Midnight.js (Apache-2.0, optional under `midnight/`). Not affiliated with Ripple, the XRPL Foundation or the Midnight Foundation.
 
 ## Buildathon Wave 3 materials
 Pitch deck, demo script, and what was built during Wave 3: [docs/buildathon/](docs/buildathon/).
