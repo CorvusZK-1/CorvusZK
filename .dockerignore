@@ -1,0 +1,15 @@
+**/.git
+**/.env
+**/.env.*
+**/.wallets*.json
+**/wallets*.json
+**/.wallet-state*
+**/.blockfrost*
+**/oci_api_key*
+**/*.pem
+**/*secret*
+**/*mnemonic*
+**/node_modules
+**/dist
+**/review
+**/.oci
