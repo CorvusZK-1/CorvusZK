@@ -130,6 +130,8 @@ export type MidnightBridge = {
     rawLedger: Record<string, unknown> | null;
   }>;
   closeEligibilitySession?: (contractAddress: string) => Promise<void>;
+  /** sha256 over the template's compiled circuit verifier keys. */
+  circuitArtifactId?: (template: string, managedRoot?: string) => string;
   /** Strict chain read used by verifyStrict (midnight/sdk-bridge.mjs readContractEvidence). */
   readContractEvidence?: (o: {
     template: string;
@@ -164,7 +166,7 @@ export type VerificationOutcome = {
  */
 export type ExpectedChainPolicy = {
   network: string;
-  template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+  template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2';
   contractAddress: string;
   /** Public ledger values that must match exactly (compared as strings). */
   publicParams?: Record<string, string | number | bigint>;
@@ -175,6 +177,7 @@ export type ExpectedChainPolicy = {
 };
 
 const SUCCESS_FLAGS: Record<string, (l: Record<string, unknown>) => boolean> = {
+  eligibility_v2: (l) => l.proven === true && l.preimageRevealed === true,
   condition: (l) => l.released === true,
   age_over: (l) => l.proven === true,
   balance_above: (l) => l.proven === true,
@@ -772,6 +775,13 @@ export class MidnightBackend implements ProofBackend {
     });
   }
 
+  /** Artifact id of the locally compiled circuits for a template (IntentV2.circuitArtifactId). */
+  async circuitArtifactId(template: string): Promise<string> {
+    const bridge = await this.getBridge();
+    if (!bridge.circuitArtifactId) throw new Error('circuitArtifactId: bridge does not provide it');
+    return bridge.circuitArtifactId(template, this.opts.managedRoot ?? bridge.defaultManagedRoot);
+  }
+
   async closeEligibilitySession(contractAddress: string): Promise<void> {
     const bridge = await this.getBridge();
     if (bridge.closeEligibilitySession) await bridge.closeEligibilitySession(contractAddress);
@@ -883,7 +893,13 @@ export async function createEscrow(
   };
 }
 
-/** Verifies the proof first; only then submits EscrowFinish. Funds can only go to the escrow's fixed Destination. */
+/**
+ * DEMO ONLY (unsafe for real value). Application-gated release: checks a generic proof with the
+ * caller's backend, then submits a caller-supplied fulfillment. It is not bound to any intent,
+ * escrow, issuer or policy (CZ-003) and anyone holding the fulfillment can finish anyway (CZ-004).
+ * Kept so the recorded demo keeps working. For real flows use `releaseStrict`.
+ * @deprecated Use releaseStrict (src/strict-release.ts).
+ */
 export async function verifyAndReleaseEscrow(
   client: xrpl.Client,
   submitter: xrpl.Wallet,
@@ -912,6 +928,12 @@ export async function verifyAndReleaseEscrow(
   return { released: res === 'tesSUCCESS', reason: res, hash: r.result.hash, feeDrops: feeDropsFromXrplResult(r) };
 }
 
+/** Explicitly named alias of the demo-only release API. */
+export const unsafeDemoVerifyAndReleaseEscrow = verifyAndReleaseEscrow;
+
 export const XRPL_TESTNET_WSS = 'wss://testnet.xrpl-labs.com';
 export const explorerTx = (h: string) => `https://testnet.xrpl.org/transactions/${h}`;
 export * from './midnight-config.js';
+export * from './intent.js';
+export * from './registry.js';
+export * from './strict-release.js';

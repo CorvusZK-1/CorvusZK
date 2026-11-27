@@ -26,6 +26,7 @@ export const EVIDENCE_KINDS = [
 /** Upper bound for an attestation string; larger inputs are rejected before parsing. */
 export const MAX_ATTESTATION_BYTES = 64 * 1024;
 const SUCCESS_FLAGS = {
+    eligibility_v2: (l) => l.proven === true && l.preimageRevealed === true,
     condition: (l) => l.released === true,
     age_over: (l) => l.proven === true,
     balance_above: (l) => l.proven === true,
@@ -557,6 +558,13 @@ export class MidnightBackend {
             managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
         });
     }
+    /** Artifact id of the locally compiled circuits for a template (IntentV2.circuitArtifactId). */
+    async circuitArtifactId(template) {
+        const bridge = await this.getBridge();
+        if (!bridge.circuitArtifactId)
+            throw new Error('circuitArtifactId: bridge does not provide it');
+        return bridge.circuitArtifactId(template, this.opts.managedRoot ?? bridge.defaultManagedRoot);
+    }
     async closeEligibilitySession(contractAddress) {
         const bridge = await this.getBridge();
         if (bridge.closeEligibilitySession)
@@ -625,7 +633,13 @@ export async function createEscrow(client, payer, o) {
         feeDrops: feeDropsFromXrplResult(r),
     };
 }
-/** Verifies the proof first; only then submits EscrowFinish. Funds can only go to the escrow's fixed Destination. */
+/**
+ * DEMO ONLY (unsafe for real value). Application-gated release: checks a generic proof with the
+ * caller's backend, then submits a caller-supplied fulfillment. It is not bound to any intent,
+ * escrow, issuer or policy (CZ-003) and anyone holding the fulfillment can finish anyway (CZ-004).
+ * Kept so the recorded demo keeps working. For real flows use `releaseStrict`.
+ * @deprecated Use releaseStrict (src/strict-release.ts).
+ */
 export async function verifyAndReleaseEscrow(client, submitter, o) {
     if (!(await o.backend.verify(o.proof)))
         return { released: false, reason: 'proof rejected' };
@@ -640,6 +654,11 @@ export async function verifyAndReleaseEscrow(client, submitter, o) {
     const res = r.result.meta.TransactionResult;
     return { released: res === 'tesSUCCESS', reason: res, hash: r.result.hash, feeDrops: feeDropsFromXrplResult(r) };
 }
+/** Explicitly named alias of the demo-only release API. */
+export const unsafeDemoVerifyAndReleaseEscrow = verifyAndReleaseEscrow;
 export const XRPL_TESTNET_WSS = 'wss://testnet.xrpl-labs.com';
 export const explorerTx = (h) => `https://testnet.xrpl.org/transactions/${h}`;
 export * from './midnight-config.js';
+export * from './intent.js';
+export * from './registry.js';
+export * from './strict-release.js';

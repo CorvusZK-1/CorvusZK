@@ -37,6 +37,7 @@ const B32 = new rt.CompactTypeBytes(32);
 const V2 = new rt.CompactTypeVector(2, B32);
 const V7 = new rt.CompactTypeVector(7, B32);
 const V8 = new rt.CompactTypeVector(8, B32);
+const V5 = new rt.CompactTypeVector(5, B32);
 
 export function pad32(text) {
   const out = Buffer.alloc(32);
@@ -123,6 +124,30 @@ export function nullifierFor(holderSecret, credentialType, escrow, preimageCommi
     u64ToBytes32(binding.offerSequence),
     binding.destination,
     bytes32(preimageCommitBytes),
+  ]);
+}
+
+/** Field element -> 32 bytes little-endian (Compact `Field as Bytes<32>`). */
+export function fieldToBytes32(v) {
+  let x = BigInt(v);
+  if (x < 0n) throw new Error('field element must be non-negative');
+  const out = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) { out[i] = Number(x & 0xffn); x >>= 8n; }
+  if (x !== 0n) throw new Error('field element does not fit in 32 bytes');
+  return out;
+}
+
+/**
+ * eligibility_v2 credential nullifier: stable for one holder secret, credential type and issuer,
+ * independent of the escrow. The strict releaser's registry refuses a second intent for it.
+ */
+export function credentialNullifierFor(holderSecret, credentialType, issuerPublicKey) {
+  return hashV(V5, [
+    pad32('corvuszk:cred-null:v2'),
+    bytes32(holderSecret),
+    pad32(credentialType),
+    fieldToBytes32(issuerPublicKey.x),
+    fieldToBytes32(issuerPublicKey.y),
   ]);
 }
 
@@ -315,11 +340,12 @@ export function eligibilityDeployArgs(o) {
     binding.owner,
     binding.offerSequence,
     binding.destination,
+    ...(o.contractVersion === 2 ? [bytes32(o.intentHash)] : []),
   ];
 }
 
-async function loadContract(managedRoot) {
-  const modPath = path.join(managedRoot, 'eligibility', 'contract', 'index.js');
+async function loadContract(managedRoot, template = 'eligibility') {
+  const modPath = path.join(managedRoot, template, 'contract', 'index.js');
   return import(pathToFileURL(modPath).href);
 }
 
@@ -349,7 +375,8 @@ function witnesses(w) {
  */
 export async function runEligibility(o) {
   const managedRoot = o.managedRoot ?? path.join(here, 'managed');
-  const m = await loadContract(managedRoot);
+  const v2 = o.contractVersion === 2;
+  const m = await loadContract(managedRoot, v2 ? 'eligibility_v2' : 'eligibility');
   const signature = o.signature ?? o.credential?.signature;
   const holderSecret = o.holderSecret;
   const expiry = o.expiry ?? o.credential?.Expiration;
@@ -366,7 +393,8 @@ export async function runEligibility(o) {
     bytes32(o.preimageCommit),
     binding.owner,
     binding.offerSequence,
-    binding.destination
+    binding.destination,
+    ...(v2 ? [bytes32(o.intentHash)] : [])
   );
   let state = initial.currentContractState;
   if (o.only !== 'reveal') {
@@ -399,6 +427,7 @@ export function publicLedger(ledger) {
     nullifier: hex(ledger.nullifier),
     preimageRevealed: ledger.preimageRevealed === true,
     revealedPreimage: ledger.preimageRevealed ? hex(ledger.revealedPreimage) : null,
+    ...(ledger.intentHash ? { intentHash: hex(ledger.intentHash), credentialNullifier: hex(ledger.credentialNullifier) } : {}),
   };
 }
 
