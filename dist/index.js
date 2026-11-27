@@ -27,6 +27,7 @@ export const EVIDENCE_KINDS = [
 export const MAX_ATTESTATION_BYTES = 64 * 1024;
 const SUCCESS_FLAGS = {
     eligibility_v2: (l) => l.proven === true && l.preimageRevealed === true,
+    eligibility_v3: (l) => l.proven === true && l.preimageRevealed === true,
     condition: (l) => l.released === true,
     age_over: (l) => l.proven === true,
     balance_above: (l) => l.proven === true,
@@ -553,6 +554,7 @@ export class MidnightBackend {
         return bridge.readEligibilityState({
             contractAddress: o.contractAddress,
             waitMs: o.waitMs,
+            contractVersion: o.contractVersion,
             indexerHttpUrl: cfg.indexerHttpUrl,
             indexerWsUrl: cfg.indexerWsUrl,
             managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,

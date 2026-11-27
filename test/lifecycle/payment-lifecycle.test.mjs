@@ -127,8 +127,13 @@ function fakeLedger({ networkId = 1, startMs = Date.now() } = {}) {
   };
 }
 
-if (elig) {
-  const issuer = elig.createMockIssuer();
+for (const V of elig ? [2, 3] : []) {
+  // V=2: eligibility_v2 with the demo mock issuer. V=3: eligibility_v3 with the standard-library issuer (CZ-005).
+  const TEMPLATE = V === 3 ? 'eligibility_v3' : 'eligibility_v2';
+  const T = (name) => `[${TEMPLATE}] ${name}`;
+  const newIssuer = () => (V === 3 ? elig.createIssuerV3() : elig.createMockIssuer());
+  const issue = async (iss, o) => (V === 3 ? elig.issueCredentialV3(iss, o) : elig.issueMockCredential(iss, o));
+  const issuer = newIssuer();
   const nowSec = () => Math.floor(Date.now() / 1000);
   const asOf = BigInt(nowSec());
   const trustMode = 'trusted-policy-party';
@@ -157,7 +162,7 @@ if (elig) {
       owner: payer.address, offerSequence: created.offerSequence, destination: merchant.address, destinationTag: null,
       asset: 'XRP', amountDrops: node.Amount, condition: terms.condition,
       finishAfter: null, cancelAfter: node.CancelAfter,
-      midnightNetwork: 'preprod', circuitArtifactId: bridge.circuitArtifactId('eligibility_v2'),
+      midnightNetwork: 'preprod', circuitArtifactId: bridge.circuitArtifactId(TEMPLATE),
       policyId: 'corvuszk-lifecycle-test', policyVersion: 1,
       issuerX: issuer.publicKey.x.toString(16), issuerY: issuer.publicKey.y.toString(16),
       credentialType: 'kyc-pass', asOf: asOf.toString(),
@@ -174,9 +179,9 @@ if (elig) {
   /** 3) Prove: run the real eligibility_v2 circuit for this intent (optionally with a bad credential / no reveal). */
   async function prove(d, { useIssuer = issuer, reveal = true } = {}) {
     const holderSecret = new Uint8Array(crypto.randomBytes(32));
-    const credential = elig.issueMockCredential(useIssuer, { holderSecret, credentialType: 'kyc-pass', expiry: asOf + 86400n });
+    const credential = await issue(useIssuer, { holderSecret, credentialType: 'kyc-pass', expiry: asOf + 86400n * 30n });
     const run = await elig.runEligibility({
-      contractVersion: 2, intentHash: Buffer.from(k.intentHashV2(d.intent), 'hex'),
+      contractVersion: V, intentHash: Buffer.from(k.intentHashV2(d.intent), 'hex'),
       issuer: useIssuer, credential, holderSecret, asOf, preimageCommit: d.sampled.publicTerms.preimageCommit,
       escrow: { owner: d.payer.address, offerSequence: d.intent.offerSequence, destination: d.merchant.address },
       reveal, releasePreimage: reveal ? d.sampled.holder.preimage : undefined,
@@ -202,14 +207,14 @@ if (elig) {
   const release = (d, run, opts = {}) =>
     k.releaseStrict({
       client: d.ledger, submitter: d.releaser, backend: backendFor(run, opts), registry: d.registry,
-      intent: d.intent, contractAddress: d.contractAddress, trustMode, now: d.ledger.clock.nowMs,
+      intent: d.intent, contractAddress: d.contractAddress, trustMode, now: d.ledger.clock.nowMs, contractTemplate: TEMPLATE,
     });
 
   const cancel = (d, wallet = d.payer) =>
     d.ledger.submitAndWait({ TransactionType: 'EscrowCancel', Account: wallet.address, Owner: d.payer.address, OfferSequence: d.intent.offerSequence }, { wallet });
   const code = (r) => r.result.meta.TransactionResult;
 
-  test('lifecycle: create -> fund -> prove -> release pays the merchant exactly once', async () => {
+  test(T('lifecycle: create -> fund -> prove -> release pays the merchant exactly once'), async () => {
     const d = await openDeal({ amountXrp: '25' });
     assert.equal(d.ledger.balance(d.payer.address), XRP(75) - FEE, 'payer paid amount + one fee');
     assert.equal(d.ledger.escrows.size, 1);
@@ -233,16 +238,16 @@ if (elig) {
     assert.equal(d.ledger.balance(d.payer.address), XRP(75) - 2n * FEE);
   });
 
-  test('lifecycle: destination-sampled preimage also settles through strict release', async () => {
+  test(T('lifecycle: destination-sampled preimage also settles through strict release'), async () => {
     const d = await openDeal({ preimageRole: 'destination' });
     const r = await release(d, await prove(d));
     assert.equal(r.status, 'settled', r.reason);
     assert.equal(d.ledger.balance(d.merchant.address), XRP(25));
   });
 
-  test('lifecycle: proof from an unexpected issuer is refused; payer is refunded after CancelAfter', async () => {
+  test(T('lifecycle: proof from an unexpected issuer is refused; payer is refunded after CancelAfter'), async () => {
     const d = await openDeal({ cancelAfterSec: 600 });
-    const run = await prove(d, { useIssuer: elig.createMockIssuer() });
+    const run = await prove(d, { useIssuer: newIssuer() });
     const r = await release(d, run);
     assert.equal(r.status, 'refused');
     assert.equal(d.ledger.escrows.size, 1, 'funds stay locked on-ledger');
@@ -256,7 +261,7 @@ if (elig) {
     assert.equal(d.ledger.escrows.size, 0);
   });
 
-  test('lifecycle: proven but not yet revealed waits (pending), nothing is submitted; after reveal it settles', async () => {
+  test(T('lifecycle: proven but not yet revealed waits (pending), nothing is submitted; after reveal it settles'), async () => {
     const d = await openDeal();
     const before = d.ledger.txs.length;
     const r = await release(d, await prove(d, { reveal: false }));
@@ -267,7 +272,7 @@ if (elig) {
     assert.equal(done.status, 'settled', done.reason);
   });
 
-  test('lifecycle timeout: valid proof but release comes too late; escrow can only be refunded', async () => {
+  test(T('lifecycle timeout: valid proof but release comes too late; escrow can only be refunded'), async () => {
     const d = await openDeal({ cancelAfterSec: 900, intentOver: { expiresAt: nowSec() + 7200 } });
     const run = await prove(d);
     d.ledger.clock.advance(905); // policy party withheld past CancelAfter (a few seconds of margin for clock rounding)
@@ -295,7 +300,7 @@ if (elig) {
     assert.equal(d.ledger.balance(d.merchant.address), XRP(1) - FEE, 'only the validated (tec) attempt cost a fee');
   });
 
-  test('lifecycle timeout: intent expires before release; release refuses, then refund', async () => {
+  test(T('lifecycle timeout: intent expires before release; release refuses, then refund'), async () => {
     const d = await openDeal({ cancelAfterSec: 3600, intentOver: { expiresAt: nowSec() + 60 } });
     const run = await prove(d);
     d.ledger.clock.advance(120);
@@ -306,7 +311,7 @@ if (elig) {
     assert.equal(d.ledger.balance(d.payer.address), XRP(100) - 2n * FEE);
   });
 
-  test('lifecycle: Midnight read outage returns unavailable, then a later retry settles once', async () => {
+  test(T('lifecycle: Midnight read outage returns unavailable, then a later retry settles once'), async () => {
     const d = await openDeal();
     const run = await prove(d);
     const down = await release(d, run, { down: true });
@@ -317,7 +322,7 @@ if (elig) {
     assert.equal(d.ledger.txs.filter((t) => t.tx.TransactionType === 'EscrowFinish').length, 1);
   });
 
-  test('lifecycle: wrong fulfillment cannot finish the escrow on the ledger', async () => {
+  test(T('lifecycle: wrong fulfillment cannot finish the escrow on the ledger'), async () => {
     const d = await openDeal();
     const other = elig.samplePreimage('payer');
     const r = await d.ledger.submitAndWait(
@@ -328,7 +333,7 @@ if (elig) {
     assert.equal(d.ledger.escrows.size, 1);
   });
 
-  test('lifecycle: mainnet intents are refused before anything is read or sent (CZ-005)', async () => {
+  test(T('lifecycle: mainnet intents are refused before anything is read or sent (CZ-005)'), async () => {
     const d = await openDeal({ intentOver: { environment: 'mainnet', xrplNetworkId: 0, midnightNetwork: 'mainnet' } });
     const before = d.ledger.txs.length;
     const r = await release(d, await prove(d));
@@ -337,7 +342,7 @@ if (elig) {
     assert.equal(d.ledger.txs.length, before);
   });
 
-  test('lifecycle: payer without enough XRP cannot fund an escrow', async () => {
+  test(T('lifecycle: payer without enough XRP cannot fund an escrow'), async () => {
     const ledger = fakeLedger();
     const payer = xrpl.Wallet.generate();
     ledger.fund(payer.address, XRP(5));

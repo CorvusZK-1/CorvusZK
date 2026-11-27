@@ -23,6 +23,8 @@ export type StrictReleaseStatus = 'settled' | 'already-settled' | 'refused' | 'u
 export type StrictReleaseResult = { status: StrictReleaseStatus; reason: string; txHash?: string };
 
 export type TrustMode = 'trusted-policy-party';
+export type StrictTemplate = 'eligibility_v2' | 'eligibility_v3';
+export const STRICT_TEMPLATES: readonly StrictTemplate[] = ['eligibility_v2', 'eligibility_v3'];
 /** ADR-001: the only supported product mode. */
 export const TRUST_MODE: TrustMode = 'trusted-policy-party';
 export const TRUST_MODE_DISCLOSURE =
@@ -57,10 +59,15 @@ export async function releaseStrict(o: {
   contractAddress: string;
   trustMode: TrustMode;
   now?: () => number;
+  /** Which strict-path contract the intent's circuitArtifactId names. Default eligibility_v2 (mock issuer);
+   *  eligibility_v3 uses the standard-library JubJub Schnorr issuer signature (CZ-005). */
+  contractTemplate?: StrictTemplate;
 }): Promise<StrictReleaseResult> {
   const res = (status: StrictReleaseStatus, reason: string, txHash?: string): StrictReleaseResult => ({ status, reason, ...(txHash ? { txHash } : {}) });
   const nowSec = Math.floor((o.now ? o.now() : Date.now()) / 1000);
   if (o?.trustMode !== TRUST_MODE) return res('refused', `trust-mode-required: pass trustMode '${TRUST_MODE}' (ADR-001)`);
+  const template: StrictTemplate = o.contractTemplate ?? 'eligibility_v2';
+  if (!STRICT_TEMPLATES.includes(template)) return res('refused', `unknown-contract-template: ${String(template)}`);
 
   let intent: IntentV2;
   let hash: string;
@@ -85,7 +92,7 @@ export async function releaseStrict(o: {
   if (!o.backend.circuitArtifactId) return res('unavailable', 'artifact-id-unavailable');
   let localArtifact: string;
   try {
-    localArtifact = await o.backend.circuitArtifactId('eligibility_v2');
+    localArtifact = await o.backend.circuitArtifactId(template);
   } catch {
     return res('unavailable', 'artifact-id-unavailable');
   }
@@ -94,7 +101,7 @@ export async function releaseStrict(o: {
   // Midnight: strict, typed verification against the intent (CZ-002/003).
   const outcome = await o.backend.verifyStrict(null, {
     network: intent.midnightNetwork,
-    template: 'eligibility_v2',
+    template,
     contractAddress: o.contractAddress,
     publicParams: {
       intentHash: hash,

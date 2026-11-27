@@ -17,6 +17,7 @@ import cc from 'five-bells-condition';
 import * as xrpl from 'xrpl';
 import { normalizeIntentV2, intentHashV2 } from './intent.js';
 import { RegistryConflict } from './registry.js';
+export const STRICT_TEMPLATES = ['eligibility_v2', 'eligibility_v3'];
 /** ADR-001: the only supported product mode. */
 export const TRUST_MODE = 'trusted-policy-party';
 export const TRUST_MODE_DISCLOSURE = 'Trusted policy party mode (ADR-001). XRPL does not verify the Midnight proof: it checks only the ' +
@@ -35,6 +36,9 @@ export async function releaseStrict(o) {
     const nowSec = Math.floor((o.now ? o.now() : Date.now()) / 1000);
     if (o?.trustMode !== TRUST_MODE)
         return res('refused', `trust-mode-required: pass trustMode '${TRUST_MODE}' (ADR-001)`);
+    const template = o.contractTemplate ?? 'eligibility_v2';
+    if (!STRICT_TEMPLATES.includes(template))
+        return res('refused', `unknown-contract-template: ${String(template)}`);
     let intent;
     let hash;
     try {
@@ -64,7 +68,7 @@ export async function releaseStrict(o) {
         return res('unavailable', 'artifact-id-unavailable');
     let localArtifact;
     try {
-        localArtifact = await o.backend.circuitArtifactId('eligibility_v2');
+        localArtifact = await o.backend.circuitArtifactId(template);
     }
     catch {
         return res('unavailable', 'artifact-id-unavailable');
@@ -74,7 +78,7 @@ export async function releaseStrict(o) {
     // Midnight: strict, typed verification against the intent (CZ-002/003).
     const outcome = await o.backend.verifyStrict(null, {
         network: intent.midnightNetwork,
-        template: 'eligibility_v2',
+        template,
         contractAddress: o.contractAddress,
         publicParams: {
             intentHash: hash,

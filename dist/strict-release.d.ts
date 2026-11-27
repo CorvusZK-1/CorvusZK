@@ -8,6 +8,8 @@ export type StrictReleaseResult = {
     txHash?: string;
 };
 export type TrustMode = 'trusted-policy-party';
+export type StrictTemplate = 'eligibility_v2' | 'eligibility_v3';
+export declare const STRICT_TEMPLATES: readonly StrictTemplate[];
 /** ADR-001: the only supported product mode. */
 export declare const TRUST_MODE: TrustMode;
 export declare const TRUST_MODE_DISCLOSURE: string;
@@ -32,5 +34,8 @@ export declare function releaseStrict(o: {
     contractAddress: string;
     trustMode: TrustMode;
     now?: () => number;
+    /** Which strict-path contract the intent's circuitArtifactId names. Default eligibility_v2 (mock issuer);
+     *  eligibility_v3 uses the standard-library JubJub Schnorr issuer signature (CZ-005). */
+    contractTemplate?: StrictTemplate;
 }): Promise<StrictReleaseResult>;
 export {};

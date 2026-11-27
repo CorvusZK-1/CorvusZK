@@ -342,7 +342,7 @@ export function eligibilityDeployArgs(o) {
     binding.owner,
     binding.offerSequence,
     binding.destination,
-    ...(o.contractVersion === 2 ? [bytes32(o.intentHash)] : []),
+    ...(o.contractVersion === 2 || o.contractVersion === 3 ? [bytes32(o.intentHash)] : []),
   ];
 }
 
@@ -352,9 +352,9 @@ async function loadContract(managedRoot, template = 'eligibility') {
 }
 
 // compact-runtime 0.21: circuits are async; the new state is in queryContexts[address].
-async function call(C, contractState, name) {
+async function call(C, contractState, name, time) {
   const addr = rt.dummyContractAddress();
-  const ctx = rt.createCircuitContext({ circuitId: name, contractAddress: addr, coinPublicKeyOrZswapState: '0'.repeat(64), contractState, privateState: {} });
+  const ctx = rt.createCircuitContext({ circuitId: name, contractAddress: addr, coinPublicKeyOrZswapState: '0'.repeat(64), contractState, privateState: {}, ...(time != null ? { time: Number(time) } : {}) });
   const r = await C.circuits[name](ctx);
   return { ...r, context: { ...r.context, currentQueryContext: r.context.queryContexts[addr] } };
 }
@@ -366,6 +366,8 @@ function witnesses(w) {
     nonceX: (c) => [c.privateState, BigInt(w.signature.nonceX)],
     nonceY: (c) => [c.privateState, BigInt(w.signature.nonceY)],
     sigS: (c) => [c.privateState, BigInt(w.signature.s)],
+    // eligibility_v3: standard-library JubJub Schnorr signature (CZ-005 / ADR-004).
+    signature: (c) => [c.privateState, v3Signature(w.signature)],
     releasePreimage: (c) => [c.privateState, bytes32(w.releasePreimage ?? new Uint8Array(32))],
   };
 }
@@ -377,8 +379,8 @@ function witnesses(w) {
  */
 export async function runEligibility(o) {
   const managedRoot = o.managedRoot ?? path.join(here, 'managed');
-  const v2 = o.contractVersion === 2;
-  const m = await loadContract(managedRoot, v2 ? 'eligibility_v2' : 'eligibility');
+  const v2 = o.contractVersion === 2 || o.contractVersion === 3;
+  const m = await loadContract(managedRoot, o.contractVersion === 3 ? 'eligibility_v3' : v2 ? 'eligibility_v2' : 'eligibility');
   const signature = o.signature ?? o.credential?.signature;
   const holderSecret = o.holderSecret;
   const expiry = o.expiry ?? o.credential?.Expiration;
@@ -400,15 +402,15 @@ export async function runEligibility(o) {
   );
   let state = initial.currentContractState;
   if (o.only !== 'reveal') {
-    const proved = await call(C, state, 'prove');
+    const proved = await call(C, state, 'prove', o.blockTime);
     state = proved.context.currentQueryContext.state;
-    if (o.again) await call(C, state, 'prove');
+    if (o.again) await call(C, state, 'prove', o.blockTime);
   }
   if (o.reveal || o.only === 'reveal') {
     const C2 = new m.Contract(
       witnesses({ ...o, holderSecret, signature, expiry, releasePreimage: o.releasePreimage })
     );
-    const revealed = await call(C2, state, 'reveal');
+    const revealed = await call(C2, state, 'reveal', o.blockTime);
     state = revealed.context.currentQueryContext.state;
   }
   const ledger = m.ledger(state);
@@ -510,4 +512,73 @@ export function fulfillmentFromRevealedLedger(ledger, expected) {
 
 export function bytesEqual(a, b) {
   return equalBytes(a, b);
+}
+
+// ---------------------------------------------------------------------------------------------
+// eligibility_v3 issuer (CZ-005 / ADR-004). Uses Midnight's own primitives, no custom crypto:
+//   key:       rt.sampleJubjubSchnorrSk() / rt.jubjubSchnorrVerifyingKey()
+//   signature: rt.jubjubSchnorrSign() over the message built by the contract's pure circuit
+//              credentialMessage(), checked in-circuit by the stdlib jubjubSchnorrVerify.
+// NOT reviewed yet. The signing key is held in this process: key custody, rotation and
+// revocation are not decided (ADR-004 "Not decided"). Test networks only.
+// ---------------------------------------------------------------------------------------------
+export const V3_SCHEME = 'compact-stdlib-jubjub-schnorr';
+const V3_MSG_TYPE = new rt.CompactTypeVector(1, rt.CompactTypeField);
+let v3Module;
+async function v3(managedRoot = path.join(here, 'managed')) {
+  if (!v3Module) v3Module = await loadContract(managedRoot, 'eligibility_v3');
+  return v3Module;
+}
+
+/** Test issuer for eligibility_v3. `secretKey` must never be logged or shipped. */
+export function createIssuerV3() {
+  const secretKey = rt.sampleJubjubSchnorrSk();
+  const pk = rt.jubjubSchnorrVerifyingKey(secretKey);
+  return { mock: false, testOnly: true, scheme: V3_SCHEME, version: 3, secretKey, publicKey: { x: pk.x, y: pk.y } };
+}
+
+/** The exact message the v3 circuit verifies (from the compiled pure circuit). */
+export async function credentialMessageV3({ credentialType, subject, expiry }) {
+  const m = await v3();
+  return m.pureCircuits.credentialMessage(pad32(credentialType), bytes32(subject), BigInt(expiry));
+}
+
+/** CZ-007: seconds after asOf during which eligibility_v3 prove() is accepted (by block time). */
+export async function proofWindowSecondsV3() {
+  const m = await v3();
+  return m.pureCircuits.proofWindowSeconds();
+}
+
+/** Issue a v3 credential. The holder secret is not part of the record; only its commitment. */
+export async function issueCredentialV3(issuer, o) {
+  if (issuer?.scheme !== V3_SCHEME || issuer.secretKey == null) throw new Error('issueCredentialV3: issuer must be createIssuerV3()');
+  const credentialType = o.credentialType ?? 'kyc-pass';
+  const expiry = BigInt(o.expiry);
+  const subject = subjectCommit(o.holderSecret);
+  const msg = await credentialMessageV3({ credentialType, subject, expiry });
+  const sig = rt.jubjubSchnorrSign(V3_MSG_TYPE, msg, issuer.secretKey);
+  return {
+    testOnly: true,
+    scheme: V3_SCHEME,
+    Issuer: { curve: 'jubjub', x: issuer.publicKey.x.toString(16), y: issuer.publicKey.y.toString(16) },
+    Subject: { commitmentHex: hex(subject) },
+    CredentialType: credentialType,
+    Expiration: expiry.toString(),
+    signature: {
+      announcementX: sig.announcement.x.toString(),
+      announcementY: sig.announcement.y.toString(),
+      response: sig.response.toString(),
+    },
+  };
+}
+
+/** Off-chain check with the runtime's own verifier (same scheme as the circuit). */
+export async function verifyCredentialV3(credential, issuerPublicKey) {
+  const msg = await credentialMessageV3({ credentialType: credential.CredentialType, subject: Buffer.from(credential.Subject.commitmentHex, 'hex'), expiry: credential.Expiration });
+  return rt.jubjubSchnorrVerify(V3_MSG_TYPE, msg, issuerPublicKey, v3Signature(credential.signature));
+}
+
+function v3Signature(sig) {
+  if (sig?.announcementX == null) return { announcement: { x: 0n, y: 0n }, response: 0n };
+  return { announcement: { x: BigInt(sig.announcementX), y: BigInt(sig.announcementY) }, response: BigInt(sig.response) };
 }
