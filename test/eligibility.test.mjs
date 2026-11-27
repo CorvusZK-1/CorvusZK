@@ -7,6 +7,8 @@ let elig;
 try {
   elig = await import('../midnight/eligibility.mjs');
 } catch (err) {
+  // CI sets CORVUSZK_REQUIRE_MIDNIGHT=1 so a missing runtime fails instead of skipping silently.
+  if (process.env.CORVUSZK_REQUIRE_MIDNIGHT) throw err;
   test('eligibility circuit', { skip: `midnight runtime not installed (${err.message}). Run: cd midnight && npm ci` }, () => {});
 }
 
