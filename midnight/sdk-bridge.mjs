@@ -191,6 +191,59 @@ export async function verifyOnChainLedger(o) {
   return { found: true, ok, ledger: led };
 }
 
+const STRICT_CIRCUITS = {
+  condition: ['attest'],
+  age_over: ['prove'],
+  balance_above: ['prove'],
+  eligibility: ['prove', 'reveal'],
+};
+
+function plainValue(v) {
+  if (typeof v === 'bigint') return v.toString();
+  if (v instanceof Uint8Array) return Buffer.from(v).toString('hex');
+  return v;
+}
+
+/**
+ * Strict chain read for MidnightBackend.verifyStrict (CZ-002).
+ * Returns { found:false } when the indexer has no state at that address, otherwise
+ * { found:true, ledger, artifactMatch } where artifactMatch is true only if every circuit's
+ * on-chain verifier key equals the local compiled verifier key, false on any difference, and
+ * null when the on-chain state does not expose a key. Unknown state shapes throw: there is no
+ * test-double pass-through here. Errors propagate; the caller maps them to `unavailable`.
+ * @param {{template:string, contractAddress:string, indexerHttpUrl?:string, indexerWsUrl?:string, managedRoot?:string, deps?:object}} o
+ */
+export async function readContractEvidence(o) {
+  const deps = o.deps ?? {};
+  const circuits = STRICT_CIRCUITS[o.template];
+  if (!circuits) throw new Error(`readContractEvidence: unknown template ${o.template}`);
+  const managedRoot = o.managedRoot ?? path.join(here, 'managed');
+  const m = await (deps.loadContract ?? loadContract)(o.template, managedRoot);
+  const query =
+    deps.queryContractState ??
+    (async (address) => {
+      if (!o.indexerHttpUrl || !o.indexerWsUrl) throw new Error('readContractEvidence: indexer URLs are required');
+      const { indexerPublicDataProvider } = await import('@midnight-ntwrk/midnight-js-indexer-public-data-provider');
+      return indexerPublicDataProvider(o.indexerHttpUrl, o.indexerWsUrl).queryContractState(address);
+    });
+  const read = await query(o.contractAddress);
+  if (!read) return { found: false };
+  if (!read?.contractState?.deserialize) throw new Error('readContractEvidence: unrecognized contract state shape');
+  const rt = deps.runtime ?? (await loadRuntime());
+  const cs = read.contractState.deserialize({ v9: rt?.ContractState });
+  const raw = m.ledger(cs.data);
+  const ledger = {};
+  for (const [key, val] of Object.entries(raw)) ledger[key] = plainValue(val);
+  let artifactMatch = true;
+  for (const c of circuits) {
+    const onChain = typeof cs.operation === 'function' ? cs.operation(c)?.verifierKey : undefined;
+    if (!onChain) { artifactMatch = null; break; }
+    const local = fs.readFileSync(path.join(managedRoot, o.template, 'keys', `${c}.verifier`));
+    if (!Buffer.from(onChain).equals(local)) { artifactMatch = false; break; }
+  }
+  return { found: true, ledger, artifactMatch };
+}
+
 /** Midnight.js 5 returns era-tagged serialized state; older shapes and test doubles pass through. */
 export async function decodeContractState(read) {
   if (read?.contractState?.deserialize) {

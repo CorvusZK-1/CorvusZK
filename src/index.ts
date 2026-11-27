@@ -130,9 +130,66 @@ export type MidnightBridge = {
     rawLedger: Record<string, unknown> | null;
   }>;
   closeEligibilitySession?: (contractAddress: string) => Promise<void>;
+  /** Strict chain read used by verifyStrict (midnight/sdk-bridge.mjs readContractEvidence). */
+  readContractEvidence?: (o: {
+    template: string;
+    contractAddress: string;
+    indexerHttpUrl: string;
+    indexerWsUrl: string;
+    managedRoot?: string;
+  }) => Promise<{ found: boolean; ledger?: Record<string, unknown>; artifactMatch?: boolean | null }>;
   defaultManagedRoot?: string;
   defaultDeploymentsPath?: string;
 };
+
+/** Outcome of strict verification. Only `verified` permits progression (CZ-002). */
+export type VerificationStatus = 'verified' | 'rejected' | 'unavailable' | 'pending' | 'expired';
+export type VerifiedChainEvidence = {
+  kind: 'verified-chain-evidence';
+  network: string;
+  template: string;
+  contractAddress: string;
+  ledger: Record<string, unknown>;
+  checkedAt: number;
+};
+export type VerificationOutcome = {
+  status: VerificationStatus;
+  /** Machine-readable reason, e.g. `indexer-unavailable`, `artifact-mismatch`. */
+  reason: string;
+  evidence?: VerifiedChainEvidence;
+};
+/**
+ * Trusted policy configuration for strict verification. Comes from the integrator's own
+ * configuration, never from the proof being checked.
+ */
+export type ExpectedChainPolicy = {
+  network: string;
+  template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+  contractAddress: string;
+  /** Public ledger values that must match exactly (compared as strings). */
+  publicParams?: Record<string, string | number | bigint>;
+  /** Reject proofs older than this (ms). */
+  maxEvidenceAgeMs?: number;
+  /** Indexer read timeout (default 20000 ms). Timeout => `unavailable`. */
+  timeoutMs?: number;
+};
+
+const SUCCESS_FLAGS: Record<string, (l: Record<string, unknown>) => boolean> = {
+  condition: (l) => l.released === true,
+  age_over: (l) => l.proven === true,
+  balance_above: (l) => l.proven === true,
+  eligibility: (l) => l.proven === true && l.preimageRevealed === true,
+};
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: NodeJS.Timeout;
+  return Promise.race([
+    p.finally(() => clearTimeout(t)),
+    new Promise<T>((_, rej) => {
+      t = setTimeout(() => rej(new Error('timeout')), ms);
+    }),
+  ]);
+}
 
 export type MidnightBackendOpts = {
   blockfrostProjectId?: string;
@@ -428,18 +485,18 @@ export class MidnightBackend implements ProofBackend {
     };
   }
 
-  async verify(proof: Proof): Promise<boolean> {
-    this.requireConfig();
-    if (!wellFormedProof(proof)) return false;
-    if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey) return false;
+  /** Signature, evidence label and claim checks only (no chain). Returns the attestation or null. */
+  private checkSignedProof(proof: Proof): MidnightAttestation | null {
+    if (!wellFormedProof(proof)) return null;
+    if (proof.backend !== this.name || proof.signerPublicKey !== this.publicKey) return null;
     const att = this.parseAttestation(proof.attestation);
-    if (!att || att.v !== 2 || !att.sig || !att.transcriptHex || !att.claim) return false;
+    if (!att || att.v !== 2 || !att.sig || !att.transcriptHex || !att.claim) return null;
     // CZ-003a: the outer claim must be exactly the signed claim, and agree with the signed ledger.
-    if (canonicalJson(att.claim) !== canonicalJson(proof.claim)) return false;
-    if (!claimMatchesLedger(att.claim, att.template, att.ledger)) return false;
+    if (canonicalJson(att.claim) !== canonicalJson(proof.claim)) return null;
+    if (!claimMatchesLedger(att.claim, att.template, att.ledger)) return null;
     // The evidence kind is signed; the outer label must match it.
-    if (att.evidence !== proof.evidence) return false;
-    if (att.evidence !== 'local-circuit-evaluation' && att.evidence !== 'chain-transaction-reported') return false;
+    if (att.evidence !== proof.evidence) return null;
+    if (att.evidence !== 'local-circuit-evaluation' && att.evidence !== 'chain-transaction-reported') return null;
     const { sig, ...body } = att;
     const pub = crypto.createPublicKey({
       key: Buffer.from(proof.signerPublicKey, 'hex'),
@@ -448,20 +505,30 @@ export class MidnightBackend implements ProofBackend {
     });
     try {
       if (!crypto.verify(null, Buffer.from(canonicalJson(body)), pub, Buffer.from(sig, 'hex'))) {
-        return false;
+        return null;
       }
     } catch {
-      return false;
+      return null;
     }
     // Ledger flag must show success for the template.
-    if (att.template === 'condition' && att.ledger?.released !== true) return false;
-    if (att.template !== 'condition' && att.ledger?.proven !== true) return false;
+    if (att.template === 'condition' && att.ledger?.released !== true) return null;
+    if (att.template !== 'condition' && att.ledger?.proven !== true) return null;
+    return att;
+  }
 
-    // Optional Preprod indexer check when mode is preprod and a contract address is present.
-    if ((this.opts.mode === 'preprod' || att.mode === 'preprod') && att.contractAddress) {
+  async verify(proof: Proof): Promise<boolean> {
+    this.requireConfig();
+    const att = this.checkSignedProof(proof);
+    if (!att) return false;
+    // Preprod: the chain check is required and fails closed (CZ-002). A missing address,
+    // missing verifier, missing state or any indexer error means "not verified".
+    // For typed outcomes (unavailable vs rejected) use verifyStrict().
+    if (this.opts.mode === 'preprod' || att.mode === 'preprod') {
+      if (!att.contractAddress) return false;
       try {
         const bridge = await this.getBridge();
-        if (bridge.verifyOnChainLedger) {
+        if (!bridge.verifyOnChainLedger) return false;
+        {
           const cfg = preprodConfig({
             BLOCKFROST_MIDNIGHT_PREPROD: this.opts.blockfrostProjectId,
             MIDNIGHT_PROOF_SERVER: this.opts.proofServer,
@@ -473,13 +540,86 @@ export class MidnightBackend implements ProofBackend {
             indexerWsUrl: cfg.indexerWsUrl,
             managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
           });
-          if (onchain.found && !onchain.ok) return false;
+          if (!onchain.found || !onchain.ok) return false;
         }
       } catch {
-        // Indexer optional: local signature + ledger snapshot still count when chain is unreachable.
+        return false;
       }
     }
     return true;
+  }
+
+  /**
+   * Strict verification against trusted policy configuration (CZ-002).
+   * Reads the expected contract from the indexer, checks network, template, deployed circuit
+   * verifier keys against the local compiled artifacts, the public parameters and the success
+   * flag. Returns a typed outcome; only `verified` carries `verified-chain-evidence`.
+   * Trust model: the indexer is trusted to report current chain state; this is not a light
+   * client and does not check finality beyond what the indexer reports.
+   */
+  async verifyStrict(proof: Proof | null, expected: ExpectedChainPolicy): Promise<VerificationOutcome> {
+    const out = (status: VerificationStatus, reason: string): VerificationOutcome => ({ status, reason });
+    if (!this.opts.blockfrostProjectId) return out('unavailable', 'not-configured');
+    if (!expected || !expected.contractAddress || !expected.template || !SUCCESS_FLAGS[expected.template]) {
+      return out('rejected', 'policy-incomplete');
+    }
+    if (expected.network !== 'preprod') return out('rejected', 'network-mismatch');
+    if (proof) {
+      if (!wellFormedProof(proof)) return out('rejected', 'malformed-proof');
+      if (proof.evidence === 'simulation-attestation') return out('rejected', 'simulation-evidence-not-accepted');
+      const att = this.checkSignedProof(proof);
+      if (!att) return out('rejected', 'bad-attestation');
+      if (att.template !== expected.template) return out('rejected', 'template-mismatch');
+      if (att.contractAddress && att.contractAddress !== expected.contractAddress) return out('rejected', 'contract-mismatch');
+      if (expected.maxEvidenceAgeMs != null && Date.now() - proof.createdAt > expected.maxEvidenceAgeMs) {
+        return out('expired', 'evidence-too-old');
+      }
+    }
+    let bridge: MidnightBridge;
+    try {
+      bridge = await this.getBridge();
+    } catch {
+      return out('unavailable', 'bridge-unavailable');
+    }
+    if (!bridge.readContractEvidence) return out('unavailable', 'no-chain-reader');
+    let chain: Awaited<ReturnType<NonNullable<MidnightBridge['readContractEvidence']>>>;
+    try {
+      const cfg = preprodConfig({
+        BLOCKFROST_MIDNIGHT_PREPROD: this.opts.blockfrostProjectId,
+        MIDNIGHT_PROOF_SERVER: this.opts.proofServer,
+      });
+      chain = await withTimeout(
+        bridge.readContractEvidence({
+          template: expected.template,
+          contractAddress: expected.contractAddress,
+          indexerHttpUrl: cfg.indexerHttpUrl,
+          indexerWsUrl: cfg.indexerWsUrl,
+          managedRoot: this.opts.managedRoot ?? bridge.defaultManagedRoot,
+        }),
+        expected.timeoutMs ?? 20_000
+      );
+    } catch (e) {
+      return out('unavailable', e instanceof Error && e.message === 'timeout' ? 'indexer-timeout' : 'indexer-error');
+    }
+    if (!chain || !chain.found || !chain.ledger) return out('unavailable', 'contract-not-found');
+    if (chain.artifactMatch === false) return out('rejected', 'artifact-mismatch');
+    if (chain.artifactMatch !== true) return out('unavailable', 'artifact-unverifiable');
+    for (const [key, want] of Object.entries(expected.publicParams ?? {})) {
+      if (String(chain.ledger[key]) !== String(want)) return out('rejected', `public-param-mismatch:${key}`);
+    }
+    if (!SUCCESS_FLAGS[expected.template](chain.ledger)) return out('pending', 'predicate-not-proven-on-chain');
+    return {
+      status: 'verified',
+      reason: 'ok',
+      evidence: {
+        kind: 'verified-chain-evidence',
+        network: expected.network,
+        template: expected.template,
+        contractAddress: expected.contractAddress,
+        ledger: chain.ledger,
+        checkedAt: Date.now(),
+      },
+    };
   }
 
   /**

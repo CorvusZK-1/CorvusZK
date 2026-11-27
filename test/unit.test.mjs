@@ -70,7 +70,10 @@ test('MidnightBackend preprod mode attaches contract address from deployments', 
   assert.equal(p.evidence, 'local-circuit-evaluation');
   const att = JSON.parse(Buffer.from(p.attestation, 'base64url').toString('utf8'));
   assert.equal(att.contractAddress, '45563d2ede4887717968e51405bc4d9993dd7082959c59cda72755c500cd52f5');
-  assert.ok(await b.verify(p));
+  // CZ-002: preprod verify fails closed when there is no chain check (stub has no verifyOnChainLedger).
+  assert.equal(await b.verify(p), false);
+  const withChain = new k.MidnightBackend({ blockfrostProjectId: 'nightpreprod-test-token', mode: 'preprod', bridge: { ...stubBridge(), verifyOnChainLedger: async () => ({ found: true, ok: true }) } });
+  assert.ok(await withChain.verify(await k.proveCondition(withChain, 'delivered', 'salt', k.commit('delivered', 'salt'))));
 });
 
 test('MidnightBackend.submitOnChain uses bridge submitCallTx (mocked, no network)', async () => {
@@ -88,7 +91,8 @@ test('MidnightBackend.submitOnChain uses bridge submitCallTx (mocked, no network
   assert.equal(out.proof.evidence, 'chain-transaction-reported');
   const att = JSON.parse(Buffer.from(out.proof.attestation, 'base64url').toString('utf8'));
   assert.equal(att.onChainTxHash, out.txHash);
-  assert.ok(await b.verify(out.proof));
+  // CZ-002: our own submit report does not verify without a chain check.
+  assert.equal(await b.verify(out.proof), false);
 });
 
 test('fee helpers read receipt fields and leave missing fees null', async () => {
