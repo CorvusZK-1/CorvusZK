@@ -26,9 +26,29 @@ export type PrivateWitness = {
     birthYear: number;
     salt: string | Uint8Array;
 };
+/**
+ * What kind of evidence a Proof object carries. These are different guarantees:
+ * - `simulation-attestation`: a local process checked the predicate in plain code and signed it. Not ZK.
+ * - `local-circuit-evaluation`: the compiled Compact circuit ran on this machine (compact-runtime).
+ *   Constraints were checked, but no zero-knowledge proof was produced or verified.
+ * - `chain-transaction-reported`: our own submitter reports that a Midnight transaction was accepted.
+ *   The node verified a ZK proof for that transaction, but this SDK has not independently checked it.
+ * - `verified-chain-evidence`: chain state was independently checked against trusted policy
+ *   configuration (see MidnightBackend.verifyStrict). Only this kind may be treated as ZK evidence.
+ */
+export type EvidenceKind = 'simulation-attestation' | 'local-circuit-evaluation' | 'chain-transaction-reported' | 'verified-chain-evidence';
+export declare const EVIDENCE_KINDS: readonly EvidenceKind[];
+/** Upper bound for an attestation string; larger inputs are rejected before parsing. */
+export declare const MAX_ATTESTATION_BYTES: number;
 export interface Proof {
     claim: Claim;
     backend: 'local-simulation' | 'midnight';
+    /** Explicit evidence kind. Check this, not `zk`. */
+    evidence: EvidenceKind;
+    /**
+     * @deprecated Use `evidence`. True only when `evidence === 'verified-chain-evidence'`.
+     * Local runs (simulation or compact-runtime) always set `zk: false`.
+     */
     zk: boolean;
     attestation: string;
     signerPublicKey: string;
@@ -124,6 +144,8 @@ export type MidnightBackendOpts = {
 };
 /** Hiding commitment to a private value: sha256(salt || value). */
 export declare function commit(value: string | number, salt: string): string;
+/** True only for evidence that was independently verified against trusted chain configuration. */
+export declare function isVerifiedChainEvidence(p: Pick<Proof, 'evidence' | 'zk'> | null | undefined): boolean;
 export declare class LocalSimulationBackend implements ProofBackend {
     name: 'local-simulation';
     private key;
