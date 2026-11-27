@@ -17,6 +17,12 @@ import cc from 'five-bells-condition';
 import * as xrpl from 'xrpl';
 import { normalizeIntentV2, intentHashV2 } from './intent.js';
 import { RegistryConflict } from './registry.js';
+/** ADR-001: the only supported product mode. */
+export const TRUST_MODE = 'trusted-policy-party';
+export const TRUST_MODE_DISCLOSURE = 'Trusted policy party mode (ADR-001). XRPL does not verify the Midnight proof: it checks only the ' +
+    'crypto-condition, the fixed destination and the time bounds. The policy party that holds the preimage ' +
+    '(by default the payer side) can release early or withhold; withholding ends in a refund to the payer ' +
+    'after CancelAfter. Testnet only: the demo credential signature is not secure (CZ-005).';
 const RIPPLE_EPOCH = 946684800;
 const accountHex32 = (a) => Buffer.from(xrpl.decodeAccountID(a)).toString('hex') + '00'.repeat(12);
 const pad32Hex = (s) => {
@@ -27,6 +33,8 @@ const pad32Hex = (s) => {
 export async function releaseStrict(o) {
     const res = (status, reason, txHash) => ({ status, reason, ...(txHash ? { txHash } : {}) });
     const nowSec = Math.floor((o.now ? o.now() : Date.now()) / 1000);
+    if (o?.trustMode !== TRUST_MODE)
+        return res('refused', `trust-mode-required: pass trustMode '${TRUST_MODE}' (ADR-001)`);
     let intent;
     let hash;
     try {
@@ -35,6 +43,10 @@ export async function releaseStrict(o) {
     }
     catch (e) {
         return res('refused', 'malformed-intent: ' + e.message);
+    }
+    // Only the mock issuer exists and its signature leaks the issuer key (CZ-005): no mainnet.
+    if (intent.environment === 'mainnet' || intent.midnightNetwork === 'mainnet') {
+        return res('refused', 'mainnet-not-supported: test networks only until the credential signature is replaced (CZ-005, ADR-004)');
     }
     const rec = o.registry.get(intent.intentId);
     if (!rec)
