@@ -124,8 +124,51 @@ export type MidnightBridge = {
         rawLedger: Record<string, unknown> | null;
     }>;
     closeEligibilitySession?: (contractAddress: string) => Promise<void>;
+    /** Strict chain read used by verifyStrict (midnight/sdk-bridge.mjs readContractEvidence). */
+    readContractEvidence?: (o: {
+        template: string;
+        contractAddress: string;
+        indexerHttpUrl: string;
+        indexerWsUrl: string;
+        managedRoot?: string;
+    }) => Promise<{
+        found: boolean;
+        ledger?: Record<string, unknown>;
+        artifactMatch?: boolean | null;
+    }>;
     defaultManagedRoot?: string;
     defaultDeploymentsPath?: string;
+};
+/** Outcome of strict verification. Only `verified` permits progression (CZ-002). */
+export type VerificationStatus = 'verified' | 'rejected' | 'unavailable' | 'pending' | 'expired';
+export type VerifiedChainEvidence = {
+    kind: 'verified-chain-evidence';
+    network: string;
+    template: string;
+    contractAddress: string;
+    ledger: Record<string, unknown>;
+    checkedAt: number;
+};
+export type VerificationOutcome = {
+    status: VerificationStatus;
+    /** Machine-readable reason, e.g. `indexer-unavailable`, `artifact-mismatch`. */
+    reason: string;
+    evidence?: VerifiedChainEvidence;
+};
+/**
+ * Trusted policy configuration for strict verification. Comes from the integrator's own
+ * configuration, never from the proof being checked.
+ */
+export type ExpectedChainPolicy = {
+    network: string;
+    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+    contractAddress: string;
+    /** Public ledger values that must match exactly (compared as strings). */
+    publicParams?: Record<string, string | number | bigint>;
+    /** Reject proofs older than this (ms). */
+    maxEvidenceAgeMs?: number;
+    /** Indexer read timeout (default 20000 ms). Timeout => `unavailable`. */
+    timeoutMs?: number;
 };
 export type MidnightBackendOpts = {
     blockfrostProjectId?: string;
@@ -169,7 +212,18 @@ export declare class MidnightBackend implements ProofBackend {
     private signAttestation;
     private parseAttestation;
     prove(claim: Claim, privateOk: boolean, witness?: PrivateWitness): Promise<Proof>;
+    /** Signature, evidence label and claim checks only (no chain). Returns the attestation or null. */
+    private checkSignedProof;
     verify(proof: Proof): Promise<boolean>;
+    /**
+     * Strict verification against trusted policy configuration (CZ-002).
+     * Reads the expected contract from the indexer, checks network, template, deployed circuit
+     * verifier keys against the local compiled artifacts, the public parameters and the success
+     * flag. Returns a typed outcome; only `verified` carries `verified-chain-evidence`.
+     * Trust model: the indexer is trusted to report current chain state; this is not a light
+     * client and does not check finality beyond what the indexer reports.
+     */
+    verifyStrict(proof: Proof | null, expected: ExpectedChainPolicy): Promise<VerificationOutcome>;
     /**
      * Submit a new on-chain Midnight Preprod callTx (attest or prove) against an already-deployed
      * contract. Callers pass private witnesses; nothing is persisted by the SDK.

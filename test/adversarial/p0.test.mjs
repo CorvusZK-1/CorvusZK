@@ -62,9 +62,10 @@ if (bridge) {
     'indexer throws': { verifyOnChainLedger: async () => { throw new Error('ETIMEDOUT'); } },
     'contract not found': { verifyOnChainLedger: async () => ({ found: false, ok: false }) },
     'no chain verifier available': {},
+    'no contract address is configured': { loadDeployments: () => null, verifyOnChainLedger: async () => ({ found: true, ok: true }) },
   };
   for (const [name, extra] of Object.entries(failOpen)) {
-    test(`CZ-002: preprod verify must fail closed when ${name}`, { todo: 'CZ-002 (PR-4)' }, async () => {
+    test(`CZ-002: preprod verify must fail closed when ${name}`, async () => {
       const b = preprodBackend(extra);
       const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
       assert.equal(await b.verify(p), false);
@@ -138,3 +139,73 @@ test('CZ-003a: attestations without a signed claim (v1) are rejected', async () 
   delete v1.claim;
   assert.equal(await b.verify({ ...p, attestation: Buffer.from(JSON.stringify(v1)).toString('base64url') }), false);
 });
+
+// ---------------- CZ-002: strict, typed chain verification ----------------
+const ADDR = 'ab'.repeat(32);
+const policy = (over = {}) => ({ network: 'preprod', template: 'age_over', contractAddress: ADDR, publicParams: { minAge: 18, asOfYear: 2026 }, ...over });
+const chainOk = { found: true, ledger: { proven: true, minAge: '18', asOfYear: '2026' }, artifactMatch: true };
+const strictBackend = (readContractEvidence) =>
+  preprodBackend({ readContractEvidence, verifyOnChainLedger: async () => ({ found: true, ok: true }) });
+
+test('CZ-002 strict: verified chain evidence for the intended contract passes', async () => {
+  const b = strictBackend(async () => chainOk);
+  const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
+  const r = await b.verifyStrict(p, policy());
+  assert.equal(r.status, 'verified', r.reason);
+  assert.equal(r.evidence.kind, 'verified-chain-evidence');
+  assert.equal(r.evidence.contractAddress, ADDR);
+});
+
+const strictCases = [
+  ['indexer timeout', async () => new Promise(() => {}), policy({ timeoutMs: 50 }), 'unavailable'],
+  ['indexer error', async () => { throw new Error('ECONNRESET'); }, policy(), 'unavailable'],
+  ['missing contract', async () => ({ found: false }), policy(), 'unavailable'],
+  ['wrong network', async () => chainOk, policy({ network: 'mainnet' }), 'rejected'],
+  ['different contract than the proof names', async () => chainOk, policy({ contractAddress: 'cd'.repeat(32) }), 'rejected'],
+  ['incompatible artifact', async () => ({ ...chainOk, artifactMatch: false }), policy(), 'rejected'],
+  ['artifact cannot be checked', async () => ({ ...chainOk, artifactMatch: null }), policy(), 'unavailable'],
+  ['wrong public parameters on chain', async () => ({ ...chainOk, ledger: { ...chainOk.ledger, minAge: '16' } }), policy(), 'rejected'],
+  ['predicate not proven yet', async () => ({ ...chainOk, ledger: { ...chainOk.ledger, proven: false } }), policy(), 'pending'],
+  ['stale evidence', async () => chainOk, policy({ maxEvidenceAgeMs: -1 }), 'expired'],
+  ['wrong template', async () => chainOk, policy({ template: 'balance_above', publicParams: { threshold: 1 } }), 'rejected'],
+];
+for (const [name, read, pol, want] of strictCases) {
+  test(`CZ-002 strict: ${name} -> ${want}, never verified`, async () => {
+    const b = strictBackend(read);
+    const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
+    const r = await b.verifyStrict(p, pol);
+    assert.equal(r.status, want, r.reason);
+    assert.equal(r.evidence, undefined);
+    assert.equal(typeof r.reason, 'string');
+  });
+}
+test('CZ-002 strict: no chain reader in the bridge -> unavailable; simulation evidence -> rejected', async () => {
+  const b = preprodBackend({});
+  const p = await k.proveAgeOver(b, 1990, 18, 2026, 'salt');
+  assert.equal((await b.verifyStrict(p, policy())).status, 'unavailable');
+  const sim = await k.proveAgeOver(new k.LocalSimulationBackend(), 1990, 18, 2026, 's');
+  assert.equal((await strictBackend(async () => chainOk).verifyStrict(sim, policy())).status, 'rejected');
+});
+
+if (bridge) {
+  test('CZ-002 bridge: readContractEvidence refuses unknown state shapes and compares verifier keys', async () => {
+    await assert.rejects(
+      bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: { queryContractState: async () => ({ data: {} }) } }),
+      /unrecognized contract state/
+    );
+    const fs = await import('node:fs');
+    const localVk = fs.readFileSync(new URL('../../midnight/managed/age_over/keys/prove.verifier', import.meta.url));
+    const fakeState = (vk) => ({ contractState: { deserialize: () => ({ data: 'D', operation: () => (vk ? { verifierKey: vk } : undefined) }) } });
+    const deps = (vk) => ({ queryContractState: async () => fakeState(vk), loadContract: async () => ({ ledger: () => ({ proven: true, minAge: 18n, asOfYear: 2026n, birthCommit: new Uint8Array(32) }) }) });
+    const same = await bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: deps(new Uint8Array(localVk)) });
+    assert.equal(same.found, true);
+    assert.equal(same.artifactMatch, true);
+    assert.equal(same.ledger.minAge, '18');
+    const other = await bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: deps(new Uint8Array(localVk.length).fill(1)) });
+    assert.equal(other.artifactMatch, false);
+    const none = await bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: deps(null) });
+    assert.equal(none.artifactMatch, null);
+    const missing = await bridge.readContractEvidence({ template: 'age_over', contractAddress: ADDR, deps: { queryContractState: async () => null } });
+    assert.equal(missing.found, false);
+  });
+}
