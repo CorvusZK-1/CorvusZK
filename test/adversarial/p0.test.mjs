@@ -1,4 +1,4 @@
-// P0 adversarial tests from the review baseline (review/review-baseline.md).
+// P0 adversarial tests from the engineering review.
 // Each test asserts the SAFE behaviour. Tests marked `todo` fail today and are tracked,
 // not blocking; the PR that fixes a finding removes its `todo` marker.
 // Local fixtures only: no network, no wallets, no real keys.
