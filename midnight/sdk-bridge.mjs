@@ -196,7 +196,30 @@ const STRICT_CIRCUITS = {
   age_over: ['prove'],
   balance_above: ['prove'],
   eligibility: ['prove', 'reveal'],
+  eligibility_v2: ['prove', 'reveal'],
 };
+
+/** Ledger object -> plain JSON values (bigint -> decimal string, bytes -> hex). */
+export function plainLedger(raw) {
+  const out = {};
+  for (const [key, val] of Object.entries(raw)) out[key] = plainValue(val);
+  return out;
+}
+
+/**
+ * Artifact id for IntentV2.circuitArtifactId: sha256 over "corvuszk:artifact:v1", the template
+ * name, and each circuit name + verifier key bytes, in STRICT_CIRCUITS order.
+ */
+export function circuitArtifactId(template, managedRoot = path.join(here, 'managed')) {
+  const circuits = STRICT_CIRCUITS[template];
+  if (!circuits) throw new Error(`circuitArtifactId: unknown template ${template}`);
+  const h = crypto.createHash('sha256').update('corvuszk:artifact:v1|').update(template);
+  for (const c of circuits) {
+    h.update('|' + c + '|');
+    h.update(fs.readFileSync(path.join(managedRoot, template, 'keys', `${c}.verifier`)));
+  }
+  return h.digest('hex');
+}
 
 function plainValue(v) {
   if (typeof v === 'bigint') return v.toString();
@@ -231,9 +254,7 @@ export async function readContractEvidence(o) {
   if (!read?.contractState?.deserialize) throw new Error('readContractEvidence: unrecognized contract state shape');
   const rt = deps.runtime ?? (await loadRuntime());
   const cs = read.contractState.deserialize({ v9: rt?.ContractState });
-  const raw = m.ledger(cs.data);
-  const ledger = {};
-  for (const [key, val] of Object.entries(raw)) ledger[key] = plainValue(val);
+  const ledger = plainLedger(m.ledger(cs.data));
   let artifactMatch = true;
   for (const c of circuits) {
     const onChain = typeof cs.operation === 'function' ? cs.operation(c)?.verifierKey : undefined;
@@ -455,17 +476,19 @@ export async function deployEligibility(o) {
     syncTimeoutMs: o.syncTimeoutMs,
   });
   const box = { witness: o.witness ?? {} };
+  // contractVersion 2 deploys eligibility_v2 (strict path; constructor also takes intentHash).
+  const template = o.contractVersion === 2 ? 'eligibility_v2' : 'eligibility';
   try {
-    const m = await d.loadContractFn('eligibility', d.managedRoot);
+    const m = await d.loadContractFn(template, d.managedRoot);
     const args = eligibilityDeployArgs(o);
-    const cc = d.CompiledContract.make('eligibility', m.Contract).pipe(
+    const cc = d.CompiledContract.make(template, m.Contract).pipe(
       d.CompiledContract.withWitnesses(eligibilityWitnesses(() => box.witness)),
-      d.CompiledContract.withCompiledFileAssets(path.join(d.managedRoot, 'eligibility'))
+      d.CompiledContract.withCompiledFileAssets(path.join(d.managedRoot, template))
     );
-    const providers = d.makeProvidersFactory(ctx, wallet, state)('eligibility');
+    const providers = d.makeProvidersFactory(ctx, wallet, state)(template);
     const deployed = await d.deployContract(providers, {
       compiledContract: cc,
-      privateStateId: 'eligibility',
+      privateStateId: template,
       initialPrivateState: {},
       args,
     });
@@ -473,7 +496,7 @@ export async function deployEligibility(o) {
     const contractAddress = String(pub.contractAddress ?? '');
     if (!contractAddress) throw new Error('deployEligibility: deploy receipt had no contractAddress');
     eligibilitySessions.set(contractAddress, { box, deployed, wallet });
-    return txReceipt(pub, { template: 'eligibility', circuit: 'deploy', contractAddress });
+    return txReceipt(pub, { template, circuit: 'deploy', contractAddress });
   } catch (err) {
     try {
       await wallet.stop();
@@ -534,7 +557,7 @@ export async function readEligibilityState(o) {
   const waitMs = Number(o.waitMs ?? 0);
   const { publicLedger } = await import('./eligibility.mjs');
   const load = deps.loadContract ?? loadContract;
-  const m = await load('eligibility', managedRoot);
+  const m = await load(o.contractVersion === 2 ? 'eligibility_v2' : 'eligibility', managedRoot);
   const query =
     deps.queryContractState ??
     (async (address) => {

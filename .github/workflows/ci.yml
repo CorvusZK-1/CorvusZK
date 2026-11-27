@@ -37,7 +37,7 @@ jobs:
           compact update "$COMPACT_VERSION"
           compact compile "+$COMPACT_VERSION" --version
 
-      - name: Compile all 4 contracts and check committed artifacts match
+      - name: Compile all Compact contracts and check committed artifacts match
         run: bash scripts/compile-contracts.sh --check
 
       - name: Install dependencies

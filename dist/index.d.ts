@@ -124,6 +124,8 @@ export type MidnightBridge = {
         rawLedger: Record<string, unknown> | null;
     }>;
     closeEligibilitySession?: (contractAddress: string) => Promise<void>;
+    /** sha256 over the template's compiled circuit verifier keys. */
+    circuitArtifactId?: (template: string, managedRoot?: string) => string;
     /** Strict chain read used by verifyStrict (midnight/sdk-bridge.mjs readContractEvidence). */
     readContractEvidence?: (o: {
         template: string;
@@ -161,7 +163,7 @@ export type VerificationOutcome = {
  */
 export type ExpectedChainPolicy = {
     network: string;
-    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility';
+    template: 'condition' | 'age_over' | 'balance_above' | 'eligibility' | 'eligibility_v2';
     contractAddress: string;
     /** Public ledger values that must match exactly (compared as strings). */
     publicParams?: Record<string, string | number | bigint>;
@@ -287,6 +289,8 @@ export declare class MidnightBackend implements ProofBackend {
         ledger: Record<string, unknown> | null;
         rawLedger: Record<string, unknown> | null;
     }>;
+    /** Artifact id of the locally compiled circuits for a template (IntentV2.circuitArtifactId). */
+    circuitArtifactId(template: string): Promise<string>;
     closeEligibilitySession(contractAddress: string): Promise<void>;
 }
 export declare function proveCondition(b: ProofBackend, secret: string, salt: string, commitment: string): Promise<Proof>;
@@ -324,7 +328,13 @@ export declare function createEscrow(client: xrpl.Client, payer: xrpl.Wallet, o:
     offerSequence: number;
     feeDrops: string | null;
 }>;
-/** Verifies the proof first; only then submits EscrowFinish. Funds can only go to the escrow's fixed Destination. */
+/**
+ * DEMO ONLY (unsafe for real value). Application-gated release: checks a generic proof with the
+ * caller's backend, then submits a caller-supplied fulfillment. It is not bound to any intent,
+ * escrow, issuer or policy (CZ-003) and anyone holding the fulfillment can finish anyway (CZ-004).
+ * Kept so the recorded demo keeps working. For real flows use `releaseStrict`.
+ * @deprecated Use releaseStrict (src/strict-release.ts).
+ */
 export declare function verifyAndReleaseEscrow(client: xrpl.Client, submitter: xrpl.Wallet, o: {
     backend: ProofBackend;
     proof: Proof;
@@ -343,6 +353,11 @@ export declare function verifyAndReleaseEscrow(client: xrpl.Client, submitter: x
     hash: string;
     feeDrops: string | null;
 }>;
+/** Explicitly named alias of the demo-only release API. */
+export declare const unsafeDemoVerifyAndReleaseEscrow: typeof verifyAndReleaseEscrow;
 export declare const XRPL_TESTNET_WSS = "wss://testnet.xrpl-labs.com";
 export declare const explorerTx: (h: string) => string;
 export * from './midnight-config.js';
+export * from './intent.js';
+export * from './registry.js';
+export * from './strict-release.js';
