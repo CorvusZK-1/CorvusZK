@@ -39,7 +39,7 @@ Midnight blocks: deploy 3,311,042; prove 3,311,048; reveal 3,311,052. Public exp
 SDK paidFees and estimatedFees both return string "1" for each Midnight operation; explorer confirms the unit is SPECK, NOT one DUST. One tDUST = 10^15 SPECK. These unusually small observed Preprod fees are not a production tariff or evidence of Ethereum cost savings. DUST is generated from registered NIGHT; backing capital, proving compute, infrastructure and XRPL reserves remain separate economic costs. No balance-delta estimation was used.
 
 ## Security model and remaining gaps
-- Default destination role samples/knows preimage, payer role receives condition/commitment only. Destination CAN finish early without Midnight. Optional payer mode reverses trust; this is not trustless cross-chain enforcement.
+- Default destination role samples/knows preimage, payer role receives condition/commitment only. Destination CAN finish early without Midnight. Optional payer mode reverses trust. Either way this is a trusted-party release, not cross-chain enforcement of the proof.
 - XRPL verifies the native crypto-condition fulfillment, NOT the Midnight proof. Circuit prove→reveal guards a releaser relying on that route, not the original sampler or anyone already holding the preimage.
 - Mock in-process Schnorr issuer, demonstration parameters, not regulated KYC or authenticated XRPL Credentials. Roles share one demonstration process; secret isolation is not production-hardened.
 - Per-instance proven/revealed flags and escrow-bound nullifier; no global cross-contract registry. Fresh deployment resets state. Do not reuse a preimage/condition across escrows.

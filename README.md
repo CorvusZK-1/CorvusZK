@@ -87,7 +87,7 @@ flowchart LR
   E1 -.->|"same condition"| E2
 ```
 
-By default the payer-side policy party samples the preimage. It can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. XRPL does not read Midnight: the link is the crypto-condition. Release is not trustless. Details: [Security model](#security-model).
+By default the payer-side policy party samples the preimage. It can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. XRPL does not read Midnight: the link is the crypto-condition. This is a trusted-party release: the payer side holds the unlock code by default, and if it is never used the deal refunds to the payer after `CancelAfter`. Details: [Security model](#security-model).
 
 ### Private vs public state (Midnight's two ledgers)
 
@@ -120,7 +120,7 @@ Midnight splits each contract into private state, kept on the user's machine and
 Short version. The full write-up, with tables for each check and replay case, is in [docs/security-model.md](docs/security-model.md).
 
 - **How the chains connect.** The XRPL escrow condition is SHA-256 of a 32-byte preimage. The eligibility contract stores a commitment to that preimage (not the preimage), plus the escrow's owner, sequence and destination. `prove()` checks the mock issuer's Schnorr signature in-circuit and records a one-time nullifier bound to that escrow. `reveal()` only works after `prove()` and only for the committed preimage. The SDK then rebuilds the XRPL fulfillment from the revealed ledger state.
-- **What XRPL enforces.** Only the crypto-condition, the fixed destination and the time bounds. XRPL does not verify the Midnight proof. CorvusZK runs in **trusted policy party** mode: the party that sampled the preimage (by default the payer-side policy party) can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. It must be trusted to release only after the proof. Release is not trustless.
+- **What XRPL enforces.** Only the crypto-condition, the fixed destination and the time bounds. XRPL does not verify the Midnight proof. CorvusZK runs in **trusted policy party** mode: the party that sampled the preimage (by default the payer-side policy party) can finish without Midnight, which pays the fixed destination early, or withhold, in which case the payer is refunded after `CancelAfter`. It must be trusted to release only after the proof. In plain terms, this is a trusted-party release: the payer side holds the unlock code by default, and the deal refunds to the payer on timeout.
 - **Replay.** A second `prove()` or `reveal()` on the same contract fails. The nullifier changes with owner, sequence, destination or preimage commitment. There is no cross-contract nullifier registry.
 - **Privacy limits.** XRPL amount, accounts and timing stay public. After `reveal()`, the preimage is public.
 - **Other limits.** The demo issuer's signature is not secure (see [SECURITY-NOTICE.md](SECURITY-NOTICE.md)). Unaudited. Not for real value. The eligibility + XRPL escrow path has been proven on testnet only.

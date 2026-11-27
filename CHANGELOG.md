@@ -2,7 +2,14 @@
 
 All dates are Pacific time. Unaudited. Not for real value. The full eligibility + XRPL escrow release path has been proven on Midnight Preprod + XRPL testnet only.
 
-## Unreleased — Midnight Buildathon Wave 3 (Nov 2026)
+## 1.1.0 — 27 Nov 2026
+
+- Security fixes from the engineering review (CZ-001 to CZ-004, CZ-008): strict release in trusted policy party mode only, explicit evidence kinds, signed claims, strict Midnight verification, intent binding (IntentV2), one credential per escrow, payer-side default preimage holder. The SDK refuses mainnet release while the demo issuer is in use.
+- [Security notice](SECURITY-NOTICE.md): the demo eligibility issuer is not secure (CZ-005); the mainnet `eligibility` instance must not be used with real value.
+- End-to-end payment lifecycle tests (create, fund, prove, release, refund, timeout), run in CI.
+- Unaudited. Not for real value.
+
+## Earlier (Buildathon Wave 3) — Midnight Buildathon Wave 3 (Nov 2026)
 
 - **27 Nov (draft, not reviewed, not deployed):** `eligibility_v3` replaces the demo credential signature with the Compact standard library's JubJub Schnorr verifier and compact-runtime's signer (CZ-005). Plan: [docs/cz-005-issuer-replacement.md](docs/cz-005-issuer-replacement.md).
 - **27 Nov:** End-to-end payment lifecycle tests (`test/lifecycle/`, `npm run test:lifecycle`, also part of `test:offline` and CI): create, fund, prove, release, refund and timeout paths. They use the real SDK, the compiled `eligibility_v2` circuit and real XRPL crypto-conditions against an in-memory XRPL ledger and a local Midnight read. No network and no real funds.
