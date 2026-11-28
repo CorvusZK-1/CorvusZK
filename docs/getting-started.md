@@ -10,6 +10,12 @@ Funds never sit with CorvusZK. Secrets and fulfillments stay with the caller.
 
 All four Compact contracts are live on Midnight mainnet (13 Nov 2026). Unaudited. Not for real value. The eligibility contract already deployed on Midnight mainnet uses the insecure demo issuer and must not be used with real value ([SECURITY-NOTICE.md](../SECURITY-NOTICE.md)). The full eligibility prove → reveal → XRPL EscrowFinish path has been proven on Midnight Preprod + XRPL testnet only. Addresses and explorer links are in the [README deployed-contracts table](../README.md#deployed-contracts).
 
+## Before you use Midnight
+
+- **You need NIGHT.** An XRPL builder who runs the Midnight half must hold some NIGHT so a wallet can generate DUST, which pays Midnight fees. There is no pay-with-XRP option. The offline backend needs none of this.
+- **Network stage.** Per IO, Midnight mainnet is in a federated phase (checked 27 Nov 2026; re-check). Do not read it as a statement about how decentralized the network is.
+- **XRPL privacy today.** XRPL Confidential Transfers exist but do not work with escrows and were not enabled on mainnet as of 27 Nov 2026.
+
 ## Pick a backend
 
 | Backend | ZK? | Needs | Use for |
@@ -37,10 +43,15 @@ One test creates and finishes a real XRPL **testnet** escrow after a simulation 
 
 ## Step 3 — real Compact circuits locally
 
+This step needs the full repository, not the npm package. The npm package is lean (about 1.7 MB): it leaves out the Midnight proving keys (`*.prover`, about 200 MB) and `midnight/package.json`. The small verifier keys are included. To run real circuits or prove on Midnight:
+
 ```bash
-cd midnight && npm ci && cd ..
+git clone https://github.com/CorvusZK-1/CorvusZK && cd CorvusZK
+npm ci && (cd midnight && npm ci)
 npm run simulate
 ```
+
+The proving keys are in `midnight/managed/*/keys/` in the repository. You can also regenerate them with `npm run compile:contracts` (needs the Compact toolchain).
 
 Then in code:
 

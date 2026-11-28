@@ -4,6 +4,10 @@ All dates are Pacific time. Unaudited. Not for real value. The full eligibility 
 
 ## Unreleased
 
+## 1.1.1 — 27 Nov 2026
+
+- Lean npm package: the Midnight proving keys (`midnight/managed/*/keys/*.prover`, about 200 MB) and `midnight/package.json` are no longer published (the tiny `.verifier` keys stay). The package drops from 51.9 MB packed / 206.9 MB unpacked to 1.7 MB packed / 2.7 MB unpacked, and installs 17 dependency packages. The offline backend, offline example and offline tests need none of them. To run real Midnight circuits or proving, clone the GitHub repository and run `npm ci && (cd midnight && npm ci)` (see `docs/getting-started.md`).
+- Docs accuracy: `released` becomes true when the attester key holder says so (the delivery check is a witness the caller supplies, so the proof does not show delivery objectively happened); XRPL privacy wording softened (Confidential Transfers exist but do not work with escrows and were not enabled on mainnet as of 27 Nov 2026); added that an XRPL builder using Midnight must hold some NIGHT so a wallet can generate DUST for fees; noted Midnight mainnet is in a federated phase per IO and never described it as decentralized; new wording-guard test.
 - Removed the `five-bells-condition` dependency. PREIMAGE-SHA-256 conditions are now built in (`src/crypto-condition.ts`, node:crypto only) and checked against committed reference vectors and a live XRPL testnet escrow. This drops 10 transitive packages from installs, including an unmaintained native add-on (`ed25519@0.0.4`) with a `node-gyp` install script.
 
 ## 1.1.0 — 27 Nov 2026
