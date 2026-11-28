@@ -1,0 +1,62 @@
+# Automatic Claude Code review for pull requests.
+# Uses Cory's Claude Pro plan via CLAUDE_CODE_OAUTH_TOKEN (repo secret).
+# One review when a PR is opened or marked ready for review — not on every
+# push — to conserve Pro usage. Not used: pull_request_target (that would
+# run untrusted PR code with the base-branch token).
+#
+# github_token is the workflow's own GITHUB_TOKEN so we do not need the
+# Claude Code GitHub App installed. Without it, the action tries to mint an
+# app token over OIDC and fails with "Claude Code is not installed on this
+# repository." Comments are posted as github-actions[bot].
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Claude review
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Skip drafts, Dependabot, and fork PRs. The official action also skips
+    # forks unless allow_fork_prs is set; we never set that.
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout the pull request
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Review the pull request with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Focus only on:
+            - Security bugs
+            - Input validation
+            - Money and limit logic (payments, amounts, balances, rate limits, caps, timeouts, refunds, and releases)
+            - Failing or missing tests related to those areas
+
+            Note: The PR branch is already checked out in the current working directory.
+
+            Post exactly one summary comment on the PR using `gh pr comment`.
+            Do not leave inline comments. Do not submit a multi-comment GitHub review.
+            Do not change any code. If you find nothing serious, say so in that one comment.
+
+            Only post that GitHub comment — don't submit review text as messages.
+          claude_args: |
+            --allowedTools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
