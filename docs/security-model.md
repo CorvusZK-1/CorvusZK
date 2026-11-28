@@ -4,7 +4,7 @@ This section answers four questions as the code behaves today. There are two rel
 
 ## 1. How are Midnight proofs connected to XRPL escrow conditions?
 
-**Bound path.** `samplePreimage(role)` in `midnight/eligibility.mjs` samples 32 random bytes. The XRPL condition is the PREIMAGE-SHA-256 crypto-condition of those bytes (`five-bells-condition`). The Compact constructor stores `persistentHash("corvuszk:preimage:v1" || preimage)`, the escrow owner, the offer sequence, and the destination. It does not store the preimage. Owner and destination are the 20-byte XRPL account id in the first 20 bytes of a 32-byte value, with the rest zero. Sequence is a `Uint<32>`.
+**Bound path.** `samplePreimage(role)` in `midnight/eligibility.mjs` samples 32 random bytes. The XRPL condition is the PREIMAGE-SHA-256 crypto-condition of those bytes (`src/crypto-condition.ts`, node:crypto only). The Compact constructor stores `persistentHash("corvuszk:preimage:v1" || preimage)`, the escrow owner, the offer sequence, and the destination. It does not store the preimage. Owner and destination are the 20-byte XRPL account id in the first 20 bytes of a 32-byte value, with the rest zero. Sequence is a `Uint<32>`.
 
 Who samples the preimage is a mode:
 

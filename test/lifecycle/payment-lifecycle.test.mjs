@@ -2,7 +2,7 @@
 //
 // What is real here: the CorvusZK SDK (createEscrow, releaseStrict, the policy registry, intent hashing),
 // the compiled eligibility_v2 Compact circuit (run locally through compact-runtime), and real XRPL
-// crypto-conditions (five-bells-condition).
+// crypto-conditions (PREIMAGE-SHA-256, checked against committed reference vectors).
 // What is simulated: the XRPL ledger (an in-memory ledger that applies the EscrowCreate / EscrowFinish /
 // EscrowCancel rules and keeps balances) and the Midnight indexer read (it returns the public ledger the
 // local circuit run produced). No network, no wallets with funds, no real keys, no real value.
@@ -12,7 +12,6 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
-import cc from 'five-bells-condition';
 import * as xrpl from 'xrpl';
 import * as k from '../../dist/index.js';
 
@@ -87,7 +86,7 @@ function fakeLedger({ networkId = 1, startMs = Date.now() } = {}) {
       if (node.Condition) {
         if (!tx.Fulfillment || String(tx.Condition).toUpperCase() !== node.Condition.toUpperCase()) return done(tx, 'tecCRYPTOCONDITION_ERROR');
         try {
-          if (!cc.validateFulfillment(cc.Fulfillment.fromBinary(Buffer.from(tx.Fulfillment, 'hex')).serializeUri(), cc.Condition.fromBinary(Buffer.from(node.Condition, 'hex')).serializeUri())) {
+          if (!k.validateFulfillment(tx.Fulfillment, node.Condition)) {
             return done(tx, 'tecCRYPTOCONDITION_ERROR');
           }
         } catch {

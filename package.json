@@ -16,7 +16,7 @@
     "example:offline": "node examples/escrow-offline.mjs",
     "example:eligibility": "node examples/eligibility-release.mjs",
     "live:eligibility": "npm run build && node midnight/live-eligibility.mjs",
-    "test:offline": "node --test test/unit.test.mjs test/eligibility.test.mjs test/templates.test.mjs test/adversarial/*.test.mjs test/lifecycle/*.test.mjs",
+    "test:offline": "node --test test/unit.test.mjs test/crypto-condition.test.mjs test/eligibility.test.mjs test/templates.test.mjs test/adversarial/*.test.mjs test/lifecycle/*.test.mjs",
     "test:lifecycle": "node --test test/lifecycle/*.test.mjs",
     "test:xrpl": "node --test test/xrpl.integration.test.mjs",
     "typecheck:witnesses": "tsc -p midnight/tsconfig.json",
@@ -40,7 +40,6 @@
   "license": "Apache-2.0",
   "type": "module",
   "dependencies": {
-    "five-bells-condition": "^5.0.1",
     "xrpl": "^5.3.0"
   },
   "devDependencies": {

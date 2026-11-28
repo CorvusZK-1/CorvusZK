@@ -15,7 +15,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as xrpl from 'xrpl';
-import cc from 'five-bells-condition';
+import { preimageSha256 } from './crypto-condition.js';
 import { preprodConfig } from './midnight-config.js';
 export const EVIDENCE_KINDS = [
     'simulation-attestation',
@@ -605,13 +605,7 @@ export function feesFromMidnightReceipt(pub) {
  *  The bound path is midnight/eligibility.mjs (see README "Security model").
  */
 export function createCryptoCondition() {
-    const preimage = crypto.randomBytes(32);
-    const f = new cc.PreimageSha256();
-    f.setPreimage(preimage);
-    return {
-        condition: f.getConditionBinary().toString('hex').toUpperCase(),
-        fulfillment: f.serializeBinary().toString('hex').toUpperCase(),
-    };
+    return preimageSha256(crypto.randomBytes(32));
 }
 export async function createEscrow(client, payer, o) {
     const now = xrpl.isoTimeToRippleTime(new Date().toISOString());
@@ -662,3 +656,4 @@ export * from './midnight-config.js';
 export * from './intent.js';
 export * from './registry.js';
 export * from './strict-release.js';
+export * from './crypto-condition.js';

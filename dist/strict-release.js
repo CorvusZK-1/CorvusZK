@@ -13,7 +13,7 @@
  * Retries are idempotent: a settled intent is never submitted again. XRPL consumes an escrow
  * once, so a duplicate EscrowFinish cannot pay twice; an unknown outcome returns `reconcile`.
  */
-import cc from 'five-bells-condition';
+import { preimageSha256 } from './crypto-condition.js';
 import * as xrpl from 'xrpl';
 import { normalizeIntentV2, intentHashV2 } from './intent.js';
 import { RegistryConflict } from './registry.js';
@@ -96,11 +96,10 @@ export async function releaseStrict(o) {
     const pre = String(ledger.revealedPreimage ?? '');
     if (!/^[0-9a-f]{64}$/.test(pre))
         return res('refused', 'no-revealed-preimage');
-    const f = new cc.PreimageSha256();
-    f.setPreimage(Buffer.from(pre, 'hex'));
-    if (f.getConditionBinary().toString('hex').toUpperCase() !== intent.condition)
+    const opened = preimageSha256(Buffer.from(pre, 'hex'));
+    if (opened.condition !== intent.condition)
         return res('refused', 'revealed-preimage-does-not-open-condition');
-    const fulfillment = f.serializeBinary().toString('hex').toUpperCase();
+    const fulfillment = opened.fulfillment;
     // One credential, one intent (CZ-008).
     const credNull = String(ledger.credentialNullifier ?? '');
     if (!/^[0-9a-f]{64}$/.test(credNull) || /^0+$/.test(credNull))

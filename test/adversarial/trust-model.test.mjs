@@ -4,7 +4,6 @@ import test from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import cc from 'five-bells-condition';
 import * as k from '../../dist/index.js';
 
 let elig, rt;
@@ -44,8 +43,7 @@ if (elig) {
 
   test('KNOWN (CZ-004): the preimage holder can finish the escrow with no Midnight step', () => {
     const s = elig.samplePreimage('payer');
-    const f = cc.fromFulfillmentBinary(Buffer.from(s.holder.fulfillment, 'hex'));
-    assert.equal(f.getConditionBinary().toString('hex').toUpperCase(), s.publicTerms.condition);
+    assert.equal(k.conditionFromFulfillment(s.holder.fulfillment), s.publicTerms.condition);
   });
 
   test('CZ-005: mock issuer and credentials are labelled insecure and test-only', () => {
