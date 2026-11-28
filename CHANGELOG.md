@@ -4,6 +4,8 @@ All dates are Pacific time. Unaudited. Not for real value. The full eligibility 
 
 ## Unreleased
 
+## 1.1.1 — 27 Nov 2026
+
 - Removed the `five-bells-condition` dependency. PREIMAGE-SHA-256 conditions are now built in (`src/crypto-condition.ts`, node:crypto only) and checked against committed reference vectors and a live XRPL testnet escrow. This drops 10 transitive packages from installs, including an unmaintained native add-on (`ed25519@0.0.4`) with a `node-gyp` install script.
 
 ## 1.1.0 — 27 Nov 2026
