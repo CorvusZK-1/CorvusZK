@@ -35,7 +35,7 @@
 |---|---|
 | [`contracts/`](contracts/) | The four Compact contracts: `eligibility`, `condition`, `age_over`, `balance_above` |
 | [`midnight/witnesses.ts`](midnight/witnesses.ts) | Typed witness implementations (private inputs) for all four contracts, checked against the compiler's generated types |
-| [`midnight/managed/`](midnight/managed/) | Compiler output: TypeScript contract API, ZKIR circuits, proving and verifying keys |
+| [`midnight/managed/`](midnight/managed/) | Compiler output: TypeScript contract API, ZKIR circuits, proving and verifying keys (the large proving keys are in the repo only, not the npm package) |
 | [`midnight/eligibility.mjs`](midnight/eligibility.mjs) | Mock issuer, Schnorr credential, XRPL preimage binding, `fulfillmentFromRevealedLedger` |
 | [`midnight/sdk-bridge.mjs`](midnight/sdk-bridge.mjs), [`providers.mjs`](midnight/providers.mjs), [`wallet9.mjs`](midnight/wallet9.mjs) | Midnight.js provider stack: wallet, proof server, indexer, deploy, `callTx`, ledger reads |
 | [`midnight/live-eligibility.mjs`](midnight/live-eligibility.mjs) | The end-to-end script behind the 12 Nov run (`npm run live:eligibility`) |
@@ -127,7 +127,7 @@ Short version. The full write-up, with tables for each check and replay case, is
 
 ## Who it is for
 
-TypeScript builders shipping small XRPL apps that need a private yes/no before releasing escrowed XRP: age-gated goods, proof-of-funds style checks, "condition met" attestations, without becoming a custodial wallet. Why Midnight: XRPL has native escrow but no private programmable checks; Midnight's Compact contracts add those without moving the money off XRPL. Comparisons with XRPL Credentials, Xahau Hooks, Boundless Smart Escrows and other Midnight projects, plus fee notes, are in [docs/alternatives-and-costs.md](docs/alternatives-and-costs.md).
+TypeScript builders shipping small XRPL apps that need a private yes/no before releasing escrowed XRP: age-gated goods, proof-of-funds style checks, "condition met" attestations, without becoming a custodial wallet. Why Midnight: XRPL escrows have no private checks today. XRPL's own Confidential Transfers are a separate feature that does not work with escrows and was not enabled on mainnet as of 27 Nov 2026 ([xrpl.org](https://xrpl.org/), re-check before relying on it). Midnight's Compact contracts add private checks without moving the money off XRPL. To run the Midnight half, an XRPL builder must hold some NIGHT so a wallet can generate DUST, which pays Midnight fees. Per IO, Midnight mainnet is in a federated phase as of 23 Nov 2026 (re-check). Comparisons with XRPL Credentials, Xahau Hooks, Boundless Smart Escrows and other Midnight projects, plus fee notes, are in [docs/alternatives-and-costs.md](docs/alternatives-and-costs.md).
 
 Docs: [security notice](SECURITY-NOTICE.md) · [getting started](docs/getting-started.md) · [what's included](WHAT-YOU-GET.md) · [the proof templates](docs/templates.md) · [XRPL escrow flow](docs/xrpl-escrow-flow.md) · [live eligibility run how-to](docs/live-eligibility.md) · [on-chain submit](docs/on-chain-submit.md) · [proof server](docs/proof-server.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG](CHANGELOG.md)
 

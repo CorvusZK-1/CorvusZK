@@ -12,7 +12,7 @@ Releaser reads `released` from the Midnight indexer ──EscrowFinish(Fulfillme
 
 1. **Crypto-condition.** `createCryptoCondition()` makes a PREIMAGE-SHA-256 pair: the public `condition` and the secret `fulfillment`. Whoever holds the fulfillment can finish the escrow, so keep it with the releaser.
 2. **Lock funds.** `createEscrow(client, buyer, { destination, amountXrp, condition, cancelAfterSec })`. XRPL itself enforces that the money can only go to `destination`, or back to the buyer after `CancelAfter`.
-3. **Prove.** The attester calls `attest()` on the Midnight `condition` contract. Midnight only accepts the transaction if the zero-knowledge proof verifies, so `released` can only become `true` honestly.
+3. **Prove.** The attester calls `attest()` on the Midnight `condition` contract. Midnight only accepts the transaction if the zero-knowledge proof verifies, so `released` can only become `true` when the attester key holder says so. The `deliveryOk()` input is a witness the caller supplies, so the proof shows that the key holder attested delivery, not that delivery objectively happened. See the trust model below.
 4. **Check and release.** The releaser reads the contract's public state (`queryContractState`) and submits `EscrowFinish` with the fulfillment only if `released === true` (see `midnight/e2e-escrow.mjs`). With the simulation backend, `verifyAndReleaseEscrow()` does the same check against a signed attestation.
 5. **Fallback.** If nothing is proven before `CancelAfter`, the buyer cancels and gets the XRP back.
 
