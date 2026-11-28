@@ -228,9 +228,12 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(steps));
     } catch (e) {
+      // Log the real error server-side; never send stack or exception
+      // details to the client (CodeQL js/stack-trace-exposure).
+      console.error('Demo run failed:', e);
       res.statusCode = 500;
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify([['Error', String(e.message || e)]]));
+      res.end(JSON.stringify([['Error', 'The demo failed. Please try again in a minute.']]));
     } finally {
       inFlight -= 1;
     }

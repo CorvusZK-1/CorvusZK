@@ -22,6 +22,12 @@
     "ws": "^8.22.1"
   },
   "overrides": {
-    "@midnightntwrk/ledger-v9": "1.0.1"
+    "@midnightntwrk/ledger-v9": "1.0.1",
+    "glob": "14.0.2",
+    "minimatch": "11.0.1",
+    "readdir-glob": {
+      "minimatch": "5.1.9"
+    },
+    "@effect/platform": "0.97.2"
   }
 }
